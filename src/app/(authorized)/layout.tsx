@@ -3,11 +3,9 @@ import { redirect } from "next/navigation"
 import { useUserStore } from "@/store/userStore"
 
 export default function AuthorizedLayout({ children }: { children: React.ReactNode }) {
-    const { user: userData, userLoading, initialized } = useUserStore()
+    const { user: userData, initialized, userLoading } = useUserStore()
 
     // Show loading spinner while authentication state is being determined
-    // Wait for initialization to complete before making auth decisions
-
     if (!initialized || userLoading) {
       return (
         <div className="flex items-center justify-center min-h-screen">
@@ -18,12 +16,12 @@ export default function AuthorizedLayout({ children }: { children: React.ReactNo
         </div>
       )
     }
-    
+
     // Redirect to login if not authenticated (only after initialization)
     if (!userData) {
         redirect("/login")
     }
 
-    // Render children if authenticated and on correct route
+    // Render children if authenticated
     return <>{children}</>
 }

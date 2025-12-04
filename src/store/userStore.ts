@@ -4,14 +4,6 @@ import { create } from "zustand";
 import type { User } from "@/components/admin/users/schema";
 import { createClient } from "@/lib/supabase/client";
 
-// export interface UserProfile {
-//   id: string;
-//  full_name: string;
-//  email: string;
-//  permission: "admin" | "read" | "write" | "full_access" | "super_admin";
-//  status: "active" | "suspended";
-// }
-
 interface UserState {
   user: User | null;
   userLoading: boolean;
@@ -94,26 +86,22 @@ export const useUserStore = create<UserState>((set, get) => ({
 
 
   fetchUser: async () => {
-    // If already initialized, ensure loading is false
-    if (get().initialized) {
-      if (get().userLoading) {
-        set({ userLoading: false });
-      }
-      return;
-    }
-    
+    // Only prevent duplicate calls if we're already initialized and loading
+    const currentState = get();
+    if (currentState.initialized && currentState.userLoading) return;
+
     set({ userLoading: true, userError: null });
 
     try {
       const supabase = createClient();
       const { data, error } = await supabase.auth.getUser();
-
+      
       // No user or error = not authenticated (valid state)
       if (error || !data.user?.id) {
         set({ user: null, userLoading: false, userError: null, initialized: true });
         return;
       }
-
+      
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("*")

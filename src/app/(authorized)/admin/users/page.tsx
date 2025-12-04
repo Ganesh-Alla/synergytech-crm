@@ -3,9 +3,11 @@ import { UserPlus } from "lucide-react"
 import { Main } from "@/components/admin/layout/main"
 import { UsersTable } from "@/components/admin/users/users-table"
 import { Button } from "@/components/ui/button"
+import { useDialog } from "@/store/useDialog"
+import { UsersDialogs } from "@/components/admin/users/users-dialog";
 
 const Users = () => {
-  
+  const { setOpenDialog } = useDialog()
   return (
     <Main className='flex flex-1 flex-col gap-4 sm:gap-6'>
     <div className='flex flex-wrap items-end justify-between gap-2'>
@@ -16,12 +18,13 @@ const Users = () => {
         </p>
       </div>
       <div className='flex gap-2'>
-      <Button className='space-x-1' onClick={() => {}}>
+      <Button className='space-x-1' onClick={() => setOpenDialog('AddUser')}>
         <span>Add User</span> <UserPlus size={18} />
       </Button>
     </div>
     </div>
     <UsersTable />
+    <UsersDialogs />
   </Main>
   )
 }

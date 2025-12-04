@@ -36,6 +36,7 @@ export function DataTableToolbar<TData>({
       <div className='flex flex-1 flex-col-reverse items-start gap-y-2 sm:flex-row sm:items-center sm:space-x-2 min-w-0'>
         {searchKey ? (
           <Input
+            name='search'
             placeholder={searchPlaceholder}
             value={
               (table.getColumn(searchKey)?.getFilterValue() as string) ?? ''
@@ -47,6 +48,7 @@ export function DataTableToolbar<TData>({
           />
         ) : (
           <Input
+            name='search'
             placeholder={searchPlaceholder}
             value={table.getState().globalFilter ?? ''}
             onChange={(event) => table.setGlobalFilter(event.target.value)}
