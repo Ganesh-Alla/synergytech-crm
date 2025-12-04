@@ -96,8 +96,8 @@ export function UsersTable() {
 //     ensurePageInRange(table.getPageCount())
 //   }, [table, ensurePageInRange])
 
-// Loading state
-if (authUsersLoading) {
+// Loading state - only show if we don't have data yet
+if (authUsersLoading && !authUsers) {
   return (
     <div className="w-full space-y-4">
       <div className="flex items-center justify-between">

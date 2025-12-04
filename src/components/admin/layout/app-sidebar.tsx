@@ -23,9 +23,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
 } from "@/components/ui/sidebar"
-import { NavUser } from "./nav-user"
 import { NavActions } from "./nav-actions"
-import { NavSecondary } from "./nav-secondary"
 import { Separator } from "../../ui/separator"
 import Link from "next/link"
 

@@ -28,10 +28,15 @@ export const useAuthUserStore = create<AuthUserStore>((set, get) => ({
   loadAuthUsers: async () => {
     // Prevent multiple simultaneous calls
     if (get().authUsersLoading) return
-    // If we already have Trace, don't fetch again
+    // If we already have data and it's loaded, don't fetch again
     if (get().authUsers && get().hasLoaded) return
  
-    set({ authUsersLoading: true })
+    // Only show loading if we don't have data yet
+    const currentUsers = get().authUsers
+    const hasData = currentUsers && currentUsers.length > 0
+    if (!hasData) {
+      set({ authUsersLoading: true })
+    }
     try {
       const authUsersData = await fetch('/api/auth-users').then(res => res.json())
       set({ authUsers: authUsersData as User[], hasLoaded: true })

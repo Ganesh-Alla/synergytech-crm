@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils"
 // import { NavUser } from "./nav-user"
 import dynamic from "next/dynamic"
 import { useEffect, useState } from "react"
+import { ProfileDropdown } from "./profile-dropdown"
 
 const Breadcrumbs = dynamic(() => import("./breadcrumbs").then(m => m.Breadcrumbs), {
   ssr: false,
@@ -51,8 +52,11 @@ export function SiteHeader({ className, fixed, children, ...props }: HeaderProps
     >
       <SidebarTrigger variant='outline' className='max-md:scale-125' />
       <Separator orientation='vertical' className='h-6' />
-      <Breadcrumbs/>
+      <Breadcrumbs />
       {children}
+      <div className="ml-auto flex items-center">
+        <ProfileDropdown />
+      </div>
     </div>
   </header>
   )

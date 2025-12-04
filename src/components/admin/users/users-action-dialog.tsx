@@ -23,10 +23,13 @@ import {
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/ui/password-input'
 import { SelectDropdown } from '@/components/ui/select-dropdown'
+import { Checkbox } from '@/components/ui/checkbox'
 import { roles } from './user-columns'
 import type{  User } from '@/components/admin/users/schema'
 import { useAuthUserStore } from '@/store/authUserStore'
+import { useUserStore } from '@/store/userStore'
 import { useState } from 'react'
+import { Label } from '@/components/ui/label'
 
 
 
@@ -40,6 +43,7 @@ const formSchema = z
     permission: z.string().min(1, 'Permission is required.'),
     confirmPassword: z.string().transform((pwd) => pwd.trim()),
     isEdit: z.boolean(),
+    agreeToLogout: z.boolean().optional(),
   })
   .refine(
     (data) => {
@@ -106,7 +110,14 @@ export function UsersActionDialog({
 }: UserActionDialogProps) {
   const isEdit = !!currentRow
   const { addAuthUser, updateAuthUser } = useAuthUserStore()
+  const { user: currentUser, signOutAsync } = useUserStore()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [agreeToLogout, setAgreeToLogout] = useState(false)
+  
+  // Check if the user is updating their own record
+  const isUpdatingSelf = isEdit && currentUser && currentRow?.id === currentUser.id
+  // Check if current user is admin (not super_admin) - disable permission field
+  const isAdmin = currentUser?.permission === 'admin'
   
   const form = useForm<UserForm>({
     resolver: zodResolver(formSchema),
@@ -139,13 +150,28 @@ export function UsersActionDialog({
       }
 
       if (isEdit) {
+        const passwordChanged = !!values.password && values.password.length > 0
+
         await updateAuthUser(userData, values.password || undefined)
+        
+        form.reset()
+        onOpenChange(false)
+        
+        // If user updated their own record
+        if (isUpdatingSelf) {
+          if (passwordChanged) {
+            // Auto logout if password changed
+            await signOutAsync('local')
+          } 
+            // Reload page if other fields changed
+            window.location.reload()
+          
+        }
       } else {
         await addAuthUser(userData, values.password)
+        form.reset()
+        onOpenChange(false)
       }
-      
-      form.reset()
-      onOpenChange(false)
     } catch (error) {
       console.error('Error submitting form:', error)
       // Error is already handled by the store with toast notifications
@@ -156,16 +182,20 @@ export function UsersActionDialog({
 
   const isPasswordTouched = !!form.formState.dirtyFields.password
 
+  const handleAgreeToLogoutChange = (checked: boolean | 'indeterminate') => {
+    setAgreeToLogout(checked === true)
+  }
+
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(state) => {
-        if (!state) {
-          form.reset()
-        }
-        onOpenChange(state)
-      }}
-    >
+      <Dialog
+        open={open}
+        onOpenChange={(state) => {
+          if (!state) {
+            form.reset()
+          }
+          onOpenChange(state)
+        }}
+      >
       <DialogContent className='sm:max-w-lg'>
         <DialogHeader className='text-start'>
           <DialogTitle>{isEdit ? 'Edit User' : 'Add New User'}</DialogTitle>
@@ -174,7 +204,7 @@ export function UsersActionDialog({
             Click save when you&apos;re done.
           </DialogDescription>
         </DialogHeader>
-        <div className='h-75 w-[calc(100%+0.75rem)] overflow-y-auto py-1 pe-3'>
+        <div className='min-h-75 w-[calc(100%+0.75rem)] overflow-y-auto py-1 pe-3'>
           <Form {...form}>
             <form
               id='user-form'
@@ -204,6 +234,7 @@ export function UsersActionDialog({
               <FormField
                 control={form.control}
                 name='email'
+                disabled={isEdit}
                 render={({ field }) => (
                   <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
                     <FormLabel className='col-span-2 text-end'>Email</FormLabel>
@@ -229,6 +260,7 @@ export function UsersActionDialog({
                       onValueChange={field.onChange}
                       placeholder='Select a role'
                       className='col-span-4'
+                      disabled={isAdmin}
                       items={roles.filter(({ value }) => value !== 'super_admin').map(({ label, value }) => ({
                         label,
                         value,
@@ -277,11 +309,22 @@ export function UsersActionDialog({
                   </FormItem>
                 )}
               />
+              {isUpdatingSelf && (
+                  <div className="flex items-start gap-3">
+                  <Checkbox id="terms-2" checked={agreeToLogout} onCheckedChange={handleAgreeToLogoutChange} />
+                  <div className="grid gap-2">
+                    <Label htmlFor="terms-2">I agree to logout.</Label>
+                    <p className="text-muted-foreground text-sm">
+                      By clicking this checkbox, you agree to logout and re-login to apply changes to your account.
+                    </p>
+                  </div>
+                </div>
+              )}
             </form>
           </Form>
         </div>
         <DialogFooter>
-          <Button type='submit' form='user-form' disabled={isSubmitting}>
+          <Button type='submit' form='user-form' disabled={Boolean(isSubmitting || (isUpdatingSelf && !agreeToLogout))}>
             {isSubmitting ? 'Saving...' : 'Save changes'}
           </Button>
         </DialogFooter>

@@ -5,8 +5,9 @@ import { useUserStore } from "@/store/userStore"
 export default function AuthorizedLayout({ children }: { children: React.ReactNode }) {
     const { user: userData, initialized, userLoading } = useUserStore()
 
-    // Show loading spinner while authentication state is being determined
-    if (!initialized || userLoading) {
+    // Show loading spinner only if not initialized OR (loading AND no user data yet)
+    // This prevents the spinner flash when navigating back with existing user data
+    if (!initialized || (userLoading && !userData)) {
       return (
         <div className="flex items-center justify-center min-h-screen">
           <div className="flex flex-col items-center gap-3">
