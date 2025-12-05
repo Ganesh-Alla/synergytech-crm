@@ -1,6 +1,6 @@
 "use client"
 import { UserPlus } from "lucide-react"
-import { Main } from "@/components/admin/layout/main"
+import { Main } from "@/components/dashboard/main"
 import { UsersTable } from "@/components/admin/users/users-table"
 import { Button } from "@/components/ui/button"
 import { useDialog } from "@/store/useDialog"

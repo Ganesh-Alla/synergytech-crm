@@ -1,24 +1,17 @@
 "use client"
 
 import {
-  AlertTriangle,
-  BarChart3,
-  Database,
+  CalendarDays,
   GitBranch,
-  Globe,
-  Key,
   LayoutDashboard,
-  Package,
-  Send,
-  Settings,
-  Wrench,
+  Mail,
+  Users,
 } from "lucide-react"
 
-import { NavMain } from "@/components/admin/layout/nav-main"
+import { NavMain } from "@/components/executive/layout/nav-main"
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -31,23 +24,32 @@ import Link from "next/link"
 const data = {
   navMain: [
     {
-      title: "Dashboard",
-      url: "/admin",
+      title: "Sales Dashboard",
+      url: "/app",
       icon: LayoutDashboard,
 
     },
   ],
   actions: [
     {
-      name: "Users",
-      url: "/admin/users",
+      name: "Leads Tracker",
+      url: "/app/leads-tracker",
       icon: GitBranch,
     },
     {
-      name: "Audits",
-      url: "/admin/audits",
-      icon: AlertTriangle,
+      name: "Clients",
+      url: "/app/clients",
+      icon: Users,
     },
+    {
+      name:"Follow Ups",
+      url: "/app/follow-ups",
+      icon: CalendarDays,
+    },{
+      name:"Marketing Campaigns",
+      url: "/app/marketing-campaigns",
+      icon: Mail,
+    }
   ],
 }
 

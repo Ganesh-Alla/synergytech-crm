@@ -1,7 +1,7 @@
 "use client"
 import { redirect } from "next/navigation"
 import { AppSidebar } from "@/components/admin/layout/app-sidebar";
-import { SiteHeader } from "@/components/admin/layout/site-header";
+import { SiteHeader } from "@/components/dashboard/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { AuthUserStoreInitializer } from "@/providers/InitStore";
