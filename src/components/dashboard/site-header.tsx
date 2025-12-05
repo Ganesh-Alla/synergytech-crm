@@ -2,12 +2,11 @@
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
-// import { NavUser } from "./nav-user"
 import dynamic from "next/dynamic"
 import { useEffect, useState } from "react"
 import { ProfileDropdown } from "../admin/layout/profile-dropdown"
 
-const Breadcrumbs = dynamic(() => import("../admin/layout/breadcrumbs").then(m => m.Breadcrumbs), {
+const Breadcrumbs = dynamic(() => import("./breadcrumbs").then(m => m.Breadcrumbs), {
   ssr: false,
 })
 

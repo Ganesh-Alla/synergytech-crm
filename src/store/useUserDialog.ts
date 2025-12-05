@@ -4,14 +4,14 @@
 import { create } from "zustand"
 import type { User } from "@/components/admin/users/schema"
 
-interface DialogStore {
+interface UserDialogStore {
   currentRow: User | null
   setCurrentRow: (v: User | null) => void
   openDialog:  'AddUser' | 'EditUser' | 'DeleteUser' | null
   setOpenDialog: (v: 'AddUser' | 'EditUser' | 'DeleteUser' | null) => void
 }
 
-export const useDialog = create<DialogStore>((set) => ({
+export const useUserDialog = create<UserDialogStore>((set) => ({
   currentRow: null,
   setCurrentRow: (row) => set({ currentRow: row }),
   openDialog: null,

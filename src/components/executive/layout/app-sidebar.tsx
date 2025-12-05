@@ -8,7 +8,7 @@ import {
   Users,
 } from "lucide-react"
 
-import { NavMain } from "@/components/executive/layout/nav-main"
+import { NavMain } from "@/components/dashboard/nav-main"
 import {
   Sidebar,
   SidebarContent,
@@ -33,7 +33,7 @@ const data = {
   actions: [
     {
       name: "Leads Tracker",
-      url: "/app/leads-tracker",
+      url: "/app/leads",
       icon: GitBranch,
     },
     {

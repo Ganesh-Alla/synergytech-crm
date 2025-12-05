@@ -11,14 +11,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import type{  User } from '@/components/admin/users/schema'
-import { useDialog } from '@/store/useDialog'
+import { useUserDialog } from '@/store/useUserDialog'
 
 type DataTableRowActionsProps = {
   row: Row<User>
 }
 
 export function DataTableRowActions({ row }: DataTableRowActionsProps) {
-  const { setOpenDialog, setCurrentRow } = useDialog()
+  const { setOpenDialog, setCurrentRow } = useUserDialog()
   const isSuperAdmin = row.original.permission === 'super_admin'
 
   return (

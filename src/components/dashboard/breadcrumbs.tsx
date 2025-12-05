@@ -30,7 +30,6 @@ export function Breadcrumbs() {
   // Label mapping for better display names
   const labelMap: Record<string, string> = {
     admin: "Dashboard",
-    users: "Users",
   };
 
   const getLabel = (segment: string) => {
@@ -38,7 +37,7 @@ export function Breadcrumbs() {
   };
 
   // For /admin, show just "Dashboard"
-  if (pathname === "/admin") {
+  if (pathname === "/admin" || pathname === "/app") {
     return (
       <Breadcrumb>
         <BreadcrumbList>
@@ -60,7 +59,7 @@ export function Breadcrumbs() {
       <BreadcrumbList>
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
-            <Link href="/admin">Dashboard</Link>
+            <Link href={pathname === "/admin" ? "/admin" : "/app"}>Dashboard</Link>
           </BreadcrumbLink>
         </BreadcrumbItem>
         <BreadcrumbSeparator />

@@ -14,7 +14,7 @@ import {
   Wrench,
 } from "lucide-react"
 
-import { NavMain } from "@/components/admin/layout/nav-main"
+import { NavMain } from "@/components/dashboard/nav-main"
 import {
   Sidebar,
   SidebarContent,

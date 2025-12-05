@@ -24,9 +24,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { roles } from './user-columns'
+import { roles } from './leads-columns'
 import { DataTablePagination } from '@/components/data-table/pagination'
-import { usersColumns as columns} from './user-columns'
+import { usersColumns as columns} from './leads-columns'
 import { DataTableToolbar } from '@/components/data-table/data-toolbar'
 import { useAuthUserStore } from '@/store/authUserStore'
 import { AlertCircle, Home, RefreshCw, Users } from 'lucide-react'

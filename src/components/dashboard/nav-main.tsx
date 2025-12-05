@@ -28,6 +28,10 @@ export function NavMain({
     if (url === "/admin") {
       return pathname === "/admin"
     }
+
+    if (url === "/app") {
+      return pathname === "/app"
+    }
     // For other routes, match if pathname starts with the URL followed by / or end of string
     return pathname === url || pathname.startsWith(url )
   }

@@ -1,32 +1,32 @@
 "use client"
 import { UserPlus } from "lucide-react"
 import { Main } from "@/components/dashboard/main"
-import { UsersTable } from "@/components/admin/users/users-table"
+import { LeadsTable } from "@/components/executive/leads/leads-table"
 import { Button } from "@/components/ui/button"
+import { LeadsDialogs } from "@/components/executive/leads/leads-dialog";
 import { useUserDialog } from "@/store/useUserDialog"
-import { UsersDialogs } from "@/components/admin/users/users-dialog";
 
-const Users = () => {
-  const { setOpenDialog } = useUserDialog()
+const Leads = () => {
+  const { setOpenDialog } = useLeadsDialog()
   return (
     <Main className='flex flex-1 flex-col gap-4 sm:gap-6'>
     <div className='flex flex-wrap items-end justify-between gap-2'>
       <div>
-        <h2 className='text-2xl font-bold tracking-tight'>User List</h2>
+        <h2 className='text-2xl font-bold tracking-tight'>Leads List</h2>
         <p className='text-muted-foreground'>
-          Manage your users and their roles here.
+          Manage your leads here.
         </p>
       </div>
       <div className='flex gap-2'>
-      <Button className='space-x-1' onClick={() => setOpenDialog('AddUser')}>
-        <span>Add User</span> <UserPlus size={18} />
+      <Button className='space-x-1' onClick={() => setOpenDialog('AddLead')}>
+        <span>Add Lead</span> <UserPlus size={18} />
       </Button>
     </div>
     </div>
-    <UsersTable />
-    <UsersDialogs />
+    <LeadsTable />
+    <LeadsDialogs />
   </Main>
   )
 }
 
-export default Users
+export default Leads

@@ -1,9 +1,9 @@
 import { UsersActionDialog } from '@/components/admin/users/users-action-dialog'
 import { UsersDeleteDialog } from '@/components/admin/users/users-delete-dialog'
-import { useDialog } from '@/store/useDialog'
+import { useUserDialog } from '@/store/useUserDialog'
 
 export function UsersDialogs() {
-  const { openDialog, setOpenDialog, currentRow, setCurrentRow } = useDialog()
+  const { openDialog, setOpenDialog, currentRow, setCurrentRow } = useUserDialog()
 
   return (
     <>
