@@ -10,25 +10,15 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import type{  User } from '@/components/admin/users/schema'
-import type { Lead } from '@/components/executive/leads/schema'
-import { useUserDialog } from '@/store/useUserDialog'
-import { useLeadsDialog } from '@/store/useLeadsDialog'
+import type { Client } from './schema'
+import { useClientsDialog } from '@/store/useClientsDialog'
 
 type DataTableRowActionsProps = {
-  row: Row<User | Lead>
+  row: Row<Client>
 }
 
 export function DataTableRowActions({ row }: DataTableRowActionsProps) {
-  // Check if it's a Lead by checking for lead-specific fields
-  const isLead = 'contact_name' in row.original
-  const userDialog = useUserDialog()
-  const leadsDialog = useLeadsDialog()
-  
-  const { setOpenDialog, setCurrentRow } = isLead ? leadsDialog : userDialog
-  
-  // For User type, check if super admin
-  const isSuperAdmin = !isLead && 'permission' in row.original && row.original.permission === 'super_admin'
+  const { setOpenDialog, setCurrentRow } = useClientsDialog()
 
   return (
       <DropdownMenu modal={false}>
@@ -44,10 +34,9 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
         <DropdownMenuContent align='end' className='w-[160px]'>
           <DropdownMenuItem
             onClick={() => {
-              setCurrentRow(row.original as any)
-              setOpenDialog(isLead ? 'EditLead' : 'EditUser')
+              setCurrentRow(row.original)
+              setOpenDialog('EditClient')
             }}
-            disabled={isSuperAdmin}
           >
             Edit
             <DropdownMenuShortcut>
@@ -57,11 +46,10 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => {
-              setCurrentRow(row.original as any)
-              setOpenDialog(isLead ? 'DeleteLead' : 'DeleteUser')
+              setCurrentRow(row.original)
+              setOpenDialog('DeleteClient')
             }}
             className='text-red-500!'
-            disabled={isSuperAdmin}
           >
             Delete
             <DropdownMenuShortcut>

@@ -23,91 +23,114 @@ import {
 import { Input } from '@/components/ui/input'
 import { SelectDropdown } from '@/components/ui/select-dropdown'
 import { Textarea } from '@/components/ui/textarea'
-import { statusOptions, sourceOptions } from './leads-columns'
-import type { Lead } from './schema'
-import { useLeadsStore } from '@/store/leadsStore'
+import { sourceOptions } from './clients-columns'
+import type { Client } from './schema'
+import { useClientsStore } from '@/store/clientsStore'
 import { useUserStore } from '@/store/userStore'
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 
 const formSchema = z
   .object({
+    client_code: z.string().min(1, 'Client Code is required.').optional(),
+    company_name: z.string().nullable().optional(),
     contact_name: z.string().min(1, 'Contact Name is required.'),
     contact_email: z.string().email('Invalid email address.'),
     contact_phone: z.string().nullable().optional(),
-    company_name: z.string().nullable().optional(),
+    industry: z.string().nullable().optional(),
+    website: z.string().url('Invalid URL.').nullable().optional().or(z.literal('')),
     source: z.enum(['website', 'referral', 'email', 'phone', 'event', 'whatsapp']),
-    status: z.enum(['new', 'in_progress', 'won', 'lost']),
-    assigned_to: z.string().uuid().nullable().optional(),
-    follow_up_at: z.string().datetime().nullable().optional(),
+    account_owner: z.string().uuid().nullable().optional(),
+    next_follow_up_at: z.string().datetime().nullable().optional(),
     last_interaction_at: z.string().datetime().nullable().optional(),
     notes: z.string().nullable().optional(),
     isEdit: z.boolean(),
   })
-type LeadForm = z.infer<typeof formSchema>
+  .refine(
+    (data) => {
+      if (data.website && data.website !== '') {
+        try {
+          new URL(data.website)
+          return true
+        } catch {
+          return false
+        }
+      }
+      return true
+    },
+    {
+      message: 'Invalid URL format.',
+      path: ['website'],
+    }
+  )
+type ClientForm = z.infer<typeof formSchema>
 
-type LeadActionDialogProps = {
-  currentRow?: Lead
+type ClientActionDialogProps = {
+  currentRow?: Client
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-export function LeadsActionDialog({
+export function ClientsActionDialog({
   currentRow,
   open,
   onOpenChange,
-}: LeadActionDialogProps) {
+}: ClientActionDialogProps) {
   const isEdit = !!currentRow
-  const { addLead, updateLead } = useLeadsStore()
+  const { addClient, updateClient } = useClientsStore()
   const { user: currentUser } = useUserStore()
   const [isSubmitting, setIsSubmitting] = useState(false)
   
-  const form = useForm<LeadForm>({
+  const form = useForm<ClientForm>({
     resolver: zodResolver(formSchema),
     defaultValues: isEdit && currentRow
       ? {
+          client_code: currentRow.client_code,
+          company_name: currentRow.company_name || '',
           contact_name: currentRow.contact_name,
           contact_email: currentRow.contact_email,
           contact_phone: currentRow.contact_phone || '',
-          company_name: currentRow.company_name || '',
+          industry: currentRow.industry || '',
+          website: currentRow.website || '',
           source: currentRow.source,
-          status: currentRow.status,
-          assigned_to: currentRow.assigned_to || '',
-          follow_up_at: currentRow.follow_up_at || '',
+          account_owner: currentRow.account_owner || '',
+          next_follow_up_at: currentRow.next_follow_up_at || '',
           last_interaction_at: currentRow.last_interaction_at || '',
           notes: currentRow.notes || '',
           isEdit,
         }
       : {
+          client_code: '',
+          company_name: '',
           contact_name: '',
           contact_email: '',
           contact_phone: '',
-          company_name: '',
+          industry: '',
+          website: '',
           source: 'website',
-          status: 'new',
-          assigned_to: '',
-          follow_up_at: '',
+          account_owner: '',
+          next_follow_up_at: '',
           last_interaction_at: '',
           notes: '',
           isEdit,
         },
   })
 
-  const onSubmit = async (values: LeadForm) => {
+  const onSubmit = async (values: ClientForm) => {
     setIsSubmitting(true)
     try {
       const now = new Date().toISOString()
-      const leadData: Lead = {
+      const clientData: Client = {
         id: currentRow?.id || '', // Will be generated on server if empty
-        client_id: currentRow?.client_id || null,
+        client_code: values.client_code || '', // Will be generated on server if empty
+        company_name: values.company_name || null,
         contact_name: values.contact_name,
         contact_email: values.contact_email,
         contact_phone: values.contact_phone || null,
-        company_name: values.company_name || null,
+        industry: values.industry || null,
+        website: values.website || null,
         source: values.source,
-        status: values.status,
-        assigned_to: values.assigned_to || null,
-        follow_up_at: values.follow_up_at || null,
+        account_owner: values.account_owner || null,
+        next_follow_up_at: values.next_follow_up_at || null,
         last_interaction_at: values.last_interaction_at || null,
         notes: values.notes || null,
         created_by: currentRow?.created_by || currentUser?.id || '',
@@ -116,9 +139,9 @@ export function LeadsActionDialog({
       }
 
       if (isEdit) {
-        await updateLead(leadData)
+        await updateClient(clientData)
       } else {
-        await addLead(leadData)
+        await addClient(clientData)
       }
       
       form.reset()
@@ -143,19 +166,42 @@ export function LeadsActionDialog({
     >
       <DialogContent className='sm:max-w-2xl max-h-[90vh] overflow-y-auto'>
         <DialogHeader className='text-start'>
-          <DialogTitle>{isEdit ? 'Edit Lead' : 'Add New Lead'}</DialogTitle>
+          <DialogTitle>{isEdit ? 'Edit Client' : 'Add New Client'}</DialogTitle>
           <DialogDescription>
-            {isEdit ? 'Update the lead here. ' : 'Create new lead here. '}
+            {isEdit ? 'Update the client here. ' : 'Create new client here. '}
             Click save when you&apos;re done.
           </DialogDescription>
         </DialogHeader>
         <div className='min-h-75 w-[calc(100%+0.75rem)] overflow-y-auto py-1 pe-3'>
           <Form {...form}>
             <form
-              id='lead-form'
+              id='client-form'
               onSubmit={form.handleSubmit(onSubmit)}
               className='space-y-4 px-0.5'
             >
+              {isEdit && (
+                <FormField
+                  control={form.control}
+                  name='client_code'
+                  render={({ field }) => (
+                    <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
+                      <FormLabel className='col-span-2 text-end'>
+                        Client Code
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder='C001'
+                          className='col-span-4'
+                          autoComplete='off'
+                          {...field}
+                          disabled
+                        />
+                      </FormControl>
+                      <FormMessage className='col-span-4 col-start-3' />
+                    </FormItem>
+                  )}
+                />
+              )}
               <FormField
                 control={form.control}
                 name='contact_name'
@@ -232,6 +278,43 @@ export function LeadsActionDialog({
               />
               <FormField
                 control={form.control}
+                name='industry'
+                render={({ field }) => (
+                  <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
+                    <FormLabel className='col-span-2 text-end'>Industry</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder='Technology'
+                        className='col-span-4'
+                        {...field}
+                        value={field.value || ''}
+                      />
+                    </FormControl>
+                    <FormMessage className='col-span-4 col-start-3' />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='website'
+                render={({ field }) => (
+                  <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
+                    <FormLabel className='col-span-2 text-end'>Website</FormLabel>
+                    <FormControl>
+                      <Input
+                        type='url'
+                        placeholder='https://example.com'
+                        className='col-span-4'
+                        {...field}
+                        value={field.value || ''}
+                      />
+                    </FormControl>
+                    <FormMessage className='col-span-4 col-start-3' />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
                 name='source'
                 render={({ field }) => (
                   <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
@@ -252,30 +335,10 @@ export function LeadsActionDialog({
               />
               <FormField
                 control={form.control}
-                name='status'
+                name='next_follow_up_at'
                 render={({ field }) => (
                   <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
-                    <FormLabel className='col-span-2 text-end'>Status *</FormLabel>
-                    <SelectDropdown
-                      defaultValue={field.value}
-                      onValueChange={field.onChange}
-                      placeholder='Select a status'
-                      className='col-span-4'
-                      items={statusOptions.map(({ label, value }) => ({
-                        label,
-                        value,
-                      }))}
-                    />
-                    <FormMessage className='col-span-4 col-start-3' />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name='follow_up_at'
-                render={({ field }) => (
-                  <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
-                    <FormLabel className='col-span-2 text-end'>Follow Up At</FormLabel>
+                    <FormLabel className='col-span-2 text-end'>Next Follow Up</FormLabel>
                     <FormControl>
                       <Input
                         type='datetime-local'
@@ -300,7 +363,7 @@ export function LeadsActionDialog({
                     <FormLabel className='col-span-2 text-end pt-2'>Notes</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder='Add any notes about this lead...'
+                        placeholder='Add any notes about this client...'
                         className='col-span-4 min-h-[100px]'
                         {...field}
                         value={field.value || ''}
@@ -314,7 +377,7 @@ export function LeadsActionDialog({
           </Form>
         </div>
         <DialogFooter>
-          <Button type='submit' form='lead-form' disabled={isSubmitting}>
+          <Button type='submit' form='client-form' disabled={isSubmitting}>
             {isSubmitting ? 'Saving...' : 'Save changes'}
           </Button>
         </DialogFooter>

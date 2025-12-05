@@ -1,25 +1,25 @@
-import { UsersActionDialog } from '@/components/admin/users/users-action-dialog'
-import { UsersDeleteDialog } from '@/components/admin/users/users-delete-dialog'
-import { useUserDialog } from '@/store/useUserDialog'
+import { LeadsActionDialog } from '@/components/executive/leads/leads-action-dialog'
+import { LeadsDeleteDialog } from '@/components/executive/leads/leads-delete-dialog'
+import { useLeadsDialog } from '@/store/useLeadsDialog'
 
-export function UsersDialogs() {
-  const { openDialog, setOpenDialog, currentRow, setCurrentRow } = useUserDialog()
+export function LeadsDialogs() {
+  const { openDialog, setOpenDialog, currentRow, setCurrentRow } = useLeadsDialog()
 
   return (
     <>
-      <UsersActionDialog
-        key='user-add'
-        open={openDialog === 'AddUser'}
-        onOpenChange={(open) => setOpenDialog(open ? 'AddUser' : null)}
+      <LeadsActionDialog
+        key='lead-add'
+        open={openDialog === 'AddLead'}
+        onOpenChange={(open) => setOpenDialog(open ? 'AddLead' : null)}
       />
 
       {currentRow && (
         <>
-          <UsersActionDialog
-            key={`user-edit-${currentRow.id}`}
-            open={openDialog === 'EditUser'}
+          <LeadsActionDialog
+            key={`lead-edit-${currentRow.id}`}
+            open={openDialog === 'EditLead'}
             onOpenChange={(open) => {
-              setOpenDialog(open ? 'EditUser' : null)
+              setOpenDialog(open ? 'EditLead' : null)
               if (!open) {
                 setTimeout(() => {
                   setCurrentRow(null)
@@ -29,11 +29,11 @@ export function UsersDialogs() {
             currentRow={currentRow}
           />
 
-          <UsersDeleteDialog
-            key={`user-delete-${currentRow.id}`}
-            open={openDialog === 'DeleteUser'}
+          <LeadsDeleteDialog
+            key={`lead-delete-${currentRow.id}`}
+            open={openDialog === 'DeleteLead'}
             onOpenChange={(open) => {
-              setOpenDialog(open ? 'DeleteUser' : null)
+              setOpenDialog(open ? 'DeleteLead' : null)
               if (!open) {
                 setTimeout(() => {
                   setCurrentRow(null)

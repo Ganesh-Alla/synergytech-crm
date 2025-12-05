@@ -4,23 +4,9 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { LongText } from '@/components/ui/long-text'
 import { cn } from '@/lib/utils'
-import type{  Lead, LeadStatus, LeadSource } from './schema'
+import type{  Client, ClientSource } from './schema'
 import { DataTableRowActions } from './data-table-row-actions'
 import { format } from 'date-fns'
-
-export const statusColors = new Map<LeadStatus, string>([
-  ['new', 'bg-blue-100/30 text-blue-900 dark:text-blue-200 border-blue-200'],
-  ['in_progress', 'bg-yellow-100/30 text-yellow-900 dark:text-yellow-200 border-yellow-200'],
-  ['won', 'bg-green-100/30 text-green-900 dark:text-green-200 border-green-200'],
-  ['lost', 'bg-destructive/10 dark:bg-destructive/50 text-destructive dark:text-primary border-destructive/10'],
-])
-
-export const statusOptions = [
-  { label: 'New', value: 'new' },
-  { label: 'In Progress', value: 'in_progress' },
-  { label: 'Won', value: 'won' },
-  { label: 'Lost', value: 'lost' },
-] as const
 
 export const sourceOptions = [
   { label: 'Website', value: 'website' },
@@ -31,7 +17,7 @@ export const sourceOptions = [
   { label: 'WhatsApp', value: 'whatsapp' },
 ] as const
 
-export const leadsColumns: ColumnDef<Lead>[] = [
+export const clientsColumns: ColumnDef<Client>[] = [
   {
     id: 'select',
     header: ({ table }) => (
@@ -58,6 +44,15 @@ export const leadsColumns: ColumnDef<Lead>[] = [
     ),
     enableSorting: false,
     enableHiding: false,
+  },
+  {
+    accessorKey: 'client_code',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Client Code' />
+    ),
+    cell: ({ row }) => (
+      <div className='w-fit ps-2 text-nowrap font-medium'>{row.getValue('client_code')}</div>
+    ),
   },
   {
     id: 'contact_name',
@@ -101,12 +96,22 @@ export const leadsColumns: ColumnDef<Lead>[] = [
     meta: { className: 'w-36' },
   },
   {
+    accessorKey: 'industry',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Industry' />
+    ),
+    cell: ({ row }) => {
+      const industry = row.getValue('industry') as string | null
+      return <div className='w-fit ps-2 text-nowrap'>{industry || '-'}</div>
+    },
+  },
+  {
     accessorKey: 'source',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Source' />
     ),
     cell: ({ row }) => {
-      const source = row.getValue('source') as LeadSource
+      const source = row.getValue('source') as ClientSource
       return (
         <Badge variant='outline' className='capitalize'>
           {source}
@@ -119,34 +124,12 @@ export const leadsColumns: ColumnDef<Lead>[] = [
     enableSorting: false,
   },
   {
-    accessorKey: 'status',
+    accessorKey: 'next_follow_up_at',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Status' />
+      <DataTableColumnHeader column={column} title='Next Follow Up' />
     ),
     cell: ({ row }) => {
-      const { status } = row.original
-      const badgeColor = statusColors.get(status)
-      return (
-        <div className='flex space-x-2'>
-          <Badge variant='outline' className={cn('capitalize', badgeColor)}>
-            {row.getValue('status')}
-          </Badge>
-        </div>
-      )
-    },
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id))
-    },
-    enableHiding: false,
-    enableSorting: false,
-  },
-  {
-    accessorKey: 'follow_up_at',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Follow Up' />
-    ),
-    cell: ({ row }) => {
-      const followUp = row.getValue('follow_up_at') as string | null
+      const followUp = row.getValue('next_follow_up_at') as string | null
       if (!followUp) return <div className='text-muted-foreground'>-</div>
       return (
         <div className='text-sm'>

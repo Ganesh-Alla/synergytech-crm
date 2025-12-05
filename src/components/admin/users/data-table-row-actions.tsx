@@ -11,24 +11,15 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import type{  User } from '@/components/admin/users/schema'
-import type { Lead } from '@/components/executive/leads/schema'
 import { useUserDialog } from '@/store/useUserDialog'
-import { useLeadsDialog } from '@/store/useLeadsDialog'
 
 type DataTableRowActionsProps = {
-  row: Row<User | Lead>
+  row: Row<User>
 }
 
 export function DataTableRowActions({ row }: DataTableRowActionsProps) {
-  // Check if it's a Lead by checking for lead-specific fields
-  const isLead = 'contact_name' in row.original
-  const userDialog = useUserDialog()
-  const leadsDialog = useLeadsDialog()
-  
-  const { setOpenDialog, setCurrentRow } = isLead ? leadsDialog : userDialog
-  
-  // For User type, check if super admin
-  const isSuperAdmin = !isLead && 'permission' in row.original && row.original.permission === 'super_admin'
+  const { setOpenDialog, setCurrentRow } = useUserDialog()
+  const isSuperAdmin = row.original.permission === 'super_admin'
 
   return (
       <DropdownMenu modal={false}>
@@ -44,8 +35,8 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
         <DropdownMenuContent align='end' className='w-[160px]'>
           <DropdownMenuItem
             onClick={() => {
-              setCurrentRow(row.original as any)
-              setOpenDialog(isLead ? 'EditLead' : 'EditUser')
+              setCurrentRow(row.original)
+              setOpenDialog('EditUser')
             }}
             disabled={isSuperAdmin}
           >
@@ -57,8 +48,8 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => {
-              setCurrentRow(row.original as any)
-              setOpenDialog(isLead ? 'DeleteLead' : 'DeleteUser')
+              setCurrentRow(row.original)
+              setOpenDialog('DeleteUser')
             }}
             className='text-red-500!'
             disabled={isSuperAdmin}

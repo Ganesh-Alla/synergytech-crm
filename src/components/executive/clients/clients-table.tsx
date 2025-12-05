@@ -24,20 +24,20 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { statusOptions, sourceOptions } from './leads-columns'
+import { sourceOptions } from './clients-columns'
 import { DataTablePagination } from '@/components/data-table/pagination'
-import { leadsColumns as columns} from './leads-columns'
+import { clientsColumns as columns} from './clients-columns'
 import { DataTableToolbar } from '@/components/data-table/data-toolbar'
-import { useLeadsStore } from '@/store/leadsStore'
-import { AlertCircle, Home, RefreshCw, Users } from 'lucide-react'
+import { useClientsStore } from '@/store/clientsStore'
+import { AlertCircle, Home, RefreshCw, Building2 } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 
 
-export function LeadsTable() {
+export function ClientsTable() {
   const router = useRouter()
-  const { leads, leadsLoading, hasLoaded } = useLeadsStore()
-  const data = leads ?? []
+  const { clients, clientsLoading, hasLoaded } = useClientsStore()
+  const data = clients ?? []
   // Local UI-only states
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
@@ -46,26 +46,6 @@ export function LeadsTable() {
   // Local state management for table (uncomment to use local-only state, not synced with URL)
   const [columnFilters, onColumnFiltersChange] = useState<ColumnFiltersState>([])
   const [pagination, onPaginationChange] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 })
-
-  // Synced with URL states (keys/defaults mirror users route search schema)
-//   const {
-//     columnFilters,
-//     onColumnFiltersChange,
-//     pagination,
-//     onPaginationChange,
-//     ensurePageInRange,
-//   } = useTableUrlState({
-//     search,
-//     navigate,
-//     pagination: { defaultPage: 1, defaultPageSize: 10 },
-//     globalFilter: { enabled: false },
-//     columnFilters: [
-//       // username per-column text filter
-//       { columnId: 'username', searchKey: 'username', type: 'string' },
-//       { columnId: 'status', searchKey: 'status', type: 'array' },
-//       { columnId: 'role', searchKey: 'role', type: 'array' },
-//     ],
-//   })
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
@@ -92,12 +72,8 @@ export function LeadsTable() {
     getFacetedUniqueValues: getFacetedUniqueValues(),
   })
 
-//   useEffect(() => {
-//     ensurePageInRange(table.getPageCount())
-//   }, [table, ensurePageInRange])
-
 // Loading state - only show if we don't have data yet
-if (leadsLoading && !leads) {
+if (clientsLoading && !clients) {
   return (
     <div className="w-full space-y-4">
       <div className="flex items-center justify-between">
@@ -117,7 +93,6 @@ if (leadsLoading && !leads) {
           <TableHeader>
             <TableRow>
               {columns.map((column) => {
-                // Use column header as key if available, otherwise fallback
                 const headerKey = typeof column.header === 'string' 
                   ? column.header 
                   : `col-${columns.indexOf(column)}`
@@ -170,14 +145,9 @@ if (hasLoaded && data.length === 0) {
     <div className="w-full space-y-4">
       <DataTableToolbar
         table={table}
-        searchPlaceholder='Filter leads...'
+        searchPlaceholder='Filter clients...'
         searchKey='contact_name'
         filters={[
-          {
-            columnId: 'status',
-            title: 'Status',
-            options: statusOptions.map((status) => ({ ...status })),
-          },
           {
             columnId: 'source',
             title: 'Source',
@@ -188,12 +158,12 @@ if (hasLoaded && data.length === 0) {
       <div className="w-full max-w-full min-w-0 rounded-md border border-dashed">
         <div className="flex flex-col items-center justify-center py-16 px-4">
           <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-            <Users className="h-8 w-8 text-muted-foreground" />
+            <Building2 className="h-8 w-8 text-muted-foreground" />
           </div>
           <div className="space-y-2 text-center mb-6">
-            <h3 className="text-lg font-semibold">No Leads Found</h3>
+            <h3 className="text-lg font-semibold">No Clients Found</h3>
             <p className="text-muted-foreground max-w-md text-sm">
-              No leads are available to display. Start by adding some leads to get started.
+              No clients are available to display. Start by adding some clients to get started.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3">
@@ -223,20 +193,15 @@ if (hasLoaded && data.length === 0) {
   return (
     <div
       className={cn(
-        'max-sm:has-[div[role="toolbar"]]:mb-16', // Add margin bottom to the table on mobile when the toolbar is visible
+        'max-sm:has-[div[role="toolbar"]]:mb-16',
         'flex flex-1 flex-col gap-4'
       )}
     >
       <DataTableToolbar
         table={table}
-        searchPlaceholder='Filter leads...'
+        searchPlaceholder='Filter clients...'
         searchKey='contact_name'
         filters={[
-          {
-            columnId: 'status',
-            title: 'Status',
-            options: statusOptions.map((status) => ({ ...status })),
-          },
           {
             columnId: 'source',
             title: 'Source',
@@ -256,8 +221,6 @@ if (hasLoaded && data.length === 0) {
                       colSpan={header.colSpan}
                       className={cn(
                         'bg-background group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted',
-                        // header.column.columnDef.meta?.className,
-                        // header.column.columnDef.meta?.thClassName
                       )}
                     >
                       {header.isPlaceholder
@@ -285,8 +248,6 @@ if (hasLoaded && data.length === 0) {
                       key={cell.id}
                       className={cn(
                         'bg-background group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted',
-                        // cell.column.columnDef.meta?.className,
-                        // cell.column.columnDef.meta?.tdClassName
                       )}
                     >
                       {flexRender(
@@ -321,7 +282,6 @@ if (hasLoaded && data.length === 0) {
         </Table>
       </div>
       <DataTablePagination table={table} className='mt-auto' />
-      {/* <DataTableBulkActions table={table} /> */}
     </div>
   )
 }

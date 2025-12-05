@@ -6,33 +6,33 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ConfirmDialog } from '@/components/confirm-dialog'
-import type { Lead } from './schema'
-import { useLeadsStore } from '@/store/leadsStore'
+import type { Client } from './schema'
+import { useClientsStore } from '@/store/clientsStore'
 
-type LeadDeleteDialogProps = {
+type ClientDeleteDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  currentRow: Lead
+  currentRow: Client
 }
 
-export function LeadsDeleteDialog({
+export function ClientsDeleteDialog({
   open,
   onOpenChange,
   currentRow,
-}: LeadDeleteDialogProps) {
+}: ClientDeleteDialogProps) {
   const [value, setValue] = useState('')
-  const { deleteLead } = useLeadsStore()
+  const { deleteClient } = useClientsStore()
 
   const handleDelete = async () => {
     if (value.trim() !== currentRow.contact_name) return
 
     try {
-      await deleteLead(currentRow.id)
+      await deleteClient(currentRow.id)
       onOpenChange(false)
       setValue('')
     } catch (error) {
       // Error is already handled by the store with toast notifications
-      console.error('Error deleting lead:', error)
+      console.error('Error deleting client:', error)
     }
   }
 
@@ -48,16 +48,17 @@ export function LeadsDeleteDialog({
             className='stroke-destructive me-1 inline-block'
             size={18}
           />{' '}
-          Delete Lead
+          Delete Client
         </span>
       }
       desc={
         <div className='space-y-4'>
           <p className='mb-2'>
-            Are you sure you want to delete the lead for{' '}
+            Are you sure you want to delete the client{' '}
+            <span className='font-bold'>{currentRow.client_code}</span> -{' '}
             <span className='font-bold'>{currentRow.contact_name}</span>?
             <br />
-            This action will permanently remove this lead from the system. This cannot be undone.
+            This action will permanently remove this client from the system. This cannot be undone.
           </p>
 
           <Label className='my-2'>

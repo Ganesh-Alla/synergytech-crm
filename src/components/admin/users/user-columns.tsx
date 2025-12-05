@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { LongText } from '@/components/ui/long-text'
 import { cn } from '@/lib/utils'
 import type{  User, UserStatus } from './schema'
-import { DataTableRowActions } from '@/components/data-table/data-table-row-actions'
+import { DataTableRowActions } from './data-table-row-actions'
 
 export const callTypes = new Map<UserStatus, string>([
   ['active', 'bg-teal-100/30 text-teal-900 dark:text-teal-200 border-teal-200'],
