@@ -1,11 +1,11 @@
 "use client"
 import { UserPlus } from "lucide-react"
 import { Main } from "@/components/dashboard/main"
+import { LeadsDialogs } from "@/components/executive/leads/leads-dialog"
 import { LeadsTable } from "@/components/executive/leads/leads-table"
 import { Button } from "@/components/ui/button"
-import { LeadsDialogs } from "@/components/executive/leads/leads-dialog"
-import { useLeadsDialog } from "@/store/useLeadsDialog"
 import { LeadsStoreInitializer } from "@/providers/InitStore"
+import { useLeadsDialog } from "@/store/useLeadsDialog"
 
 const Leads = () => {
   const { setOpenDialog } = useLeadsDialog()

@@ -1,15 +1,5 @@
 import { z } from 'zod'
 
-const clientSourceSchema = z.union([
-  z.literal('website'),
-  z.literal('referral'),
-  z.literal('email'),
-  z.literal('phone'),
-  z.literal('event'),
-  z.literal('whatsapp'),
-])
-export type ClientSource = z.infer<typeof clientSourceSchema>
-
 const clientSchema = z.object({
   id: z.string().uuid(),
   client_code: z.string(),
@@ -19,8 +9,6 @@ const clientSchema = z.object({
   contact_phone: z.string().nullable(),
   industry: z.string().nullable(),
   website: z.string().nullable(),
-  source: clientSourceSchema,
-  account_owner: z.string().uuid().nullable(),
   last_interaction_at: z.string().datetime().nullable(),
   next_follow_up_at: z.string().datetime().nullable(),
   notes: z.string().nullable(),

@@ -1,50 +1,13 @@
 import type{  ColumnDef } from '@tanstack/react-table'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
-import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { LongText } from '@/components/ui/long-text'
 import { cn } from '@/lib/utils'
-import type{  Client, ClientSource } from './schema'
+import type{  Client } from './schema'
 import { DataTableRowActions } from './data-table-row-actions'
 import { format } from 'date-fns'
 
-export const sourceOptions = [
-  { label: 'Website', value: 'website' },
-  { label: 'Referral', value: 'referral' },
-  { label: 'Email', value: 'email' },
-  { label: 'Phone', value: 'phone' },
-  { label: 'Event', value: 'event' },
-  { label: 'WhatsApp', value: 'whatsapp' },
-] as const
-
 export const clientsColumns: ColumnDef<Client>[] = [
-  {
-    id: 'select',
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && 'indeterminate')
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label='Select all'
-        className='translate-y-[2px]'
-      />
-    ),
-    meta: {
-      className: cn('max-md:sticky start-0 z-10 rounded-tl-[inherit]'),
-    },
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label='Select row'
-        className='translate-y-[2px]'
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
   {
     accessorKey: 'client_code',
     header: ({ column }) => (
@@ -104,24 +67,6 @@ export const clientsColumns: ColumnDef<Client>[] = [
       const industry = row.getValue('industry') as string | null
       return <div className='w-fit ps-2 text-nowrap'>{industry || '-'}</div>
     },
-  },
-  {
-    accessorKey: 'source',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Source' />
-    ),
-    cell: ({ row }) => {
-      const source = row.getValue('source') as ClientSource
-      return (
-        <Badge variant='outline' className='capitalize'>
-          {source}
-        </Badge>
-      )
-    },
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id))
-    },
-    enableSorting: false,
   },
   {
     accessorKey: 'next_follow_up_at',

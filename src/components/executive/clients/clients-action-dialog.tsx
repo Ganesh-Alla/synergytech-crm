@@ -21,27 +21,37 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { SelectDropdown } from '@/components/ui/select-dropdown'
 import { Textarea } from '@/components/ui/textarea'
-import { sourceOptions } from './clients-columns'
 import type { Client } from './schema'
 import { useClientsStore } from '@/store/clientsStore'
 import { useUserStore } from '@/store/userStore'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const formSchema = z
   .object({
-    client_code: z.string().min(1, 'Client Code is required.').optional(),
+    client_code: z.string().optional().or(z.literal('')),
     company_name: z.string().nullable().optional(),
     contact_name: z.string().min(1, 'Contact Name is required.'),
     contact_email: z.string().email('Invalid email address.'),
     contact_phone: z.string().nullable().optional(),
     industry: z.string().nullable().optional(),
     website: z.string().url('Invalid URL.').nullable().optional().or(z.literal('')),
-    source: z.enum(['website', 'referral', 'email', 'phone', 'event', 'whatsapp']),
-    account_owner: z.string().uuid().nullable().optional(),
-    next_follow_up_at: z.string().datetime().nullable().optional(),
-    last_interaction_at: z.string().datetime().nullable().optional(),
+    next_follow_up_at: z
+      .union([
+        z.string().datetime(),
+        z.literal('').transform(() => null),
+        z.null(),
+        z.undefined(),
+      ])
+      .optional(),
+    last_interaction_at: z
+      .union([
+        z.string().datetime(),
+        z.literal('').transform(() => null),
+        z.null(),
+        z.undefined(),
+      ])
+      .optional(),
     notes: z.string().nullable().optional(),
     isEdit: z.boolean(),
   })
@@ -91,8 +101,6 @@ export function ClientsActionDialog({
           contact_phone: currentRow.contact_phone || '',
           industry: currentRow.industry || '',
           website: currentRow.website || '',
-          source: currentRow.source,
-          account_owner: currentRow.account_owner || '',
           next_follow_up_at: currentRow.next_follow_up_at || '',
           last_interaction_at: currentRow.last_interaction_at || '',
           notes: currentRow.notes || '',
@@ -106,8 +114,6 @@ export function ClientsActionDialog({
           contact_phone: '',
           industry: '',
           website: '',
-          source: 'website',
-          account_owner: '',
           next_follow_up_at: '',
           last_interaction_at: '',
           notes: '',
@@ -115,7 +121,42 @@ export function ClientsActionDialog({
         },
   })
 
+  useEffect(() => {
+    if (open) {
+      if (isEdit && currentRow) {
+        form.reset({
+          client_code: currentRow.client_code,
+          company_name: currentRow.company_name || '',
+          contact_name: currentRow.contact_name,
+          contact_email: currentRow.contact_email,
+          contact_phone: currentRow.contact_phone || '',
+          industry: currentRow.industry || '',
+          website: currentRow.website || '',
+          next_follow_up_at: currentRow.next_follow_up_at || '',
+          last_interaction_at: currentRow.last_interaction_at || '',
+          notes: currentRow.notes || '',
+          isEdit,
+        })
+      } else {
+        form.reset({
+          client_code: '',
+          company_name: '',
+          contact_name: '',
+          contact_email: '',
+          contact_phone: '',
+          industry: '',
+          website: '',
+          next_follow_up_at: '',
+          last_interaction_at: '',
+          notes: '',
+          isEdit,
+        })
+      }
+    }
+  }, [open, currentRow, isEdit, form])
+
   const onSubmit = async (values: ClientForm) => {
+    console.log('onSubmit called with values:', values)
     setIsSubmitting(true)
     try {
       const now = new Date().toISOString()
@@ -128,8 +169,6 @@ export function ClientsActionDialog({
         contact_phone: values.contact_phone || null,
         industry: values.industry || null,
         website: values.website || null,
-        source: values.source,
-        account_owner: values.account_owner || null,
         next_follow_up_at: values.next_follow_up_at || null,
         last_interaction_at: values.last_interaction_at || null,
         notes: values.notes || null,
@@ -176,7 +215,19 @@ export function ClientsActionDialog({
           <Form {...form}>
             <form
               id='client-form'
-              onSubmit={form.handleSubmit(onSubmit)}
+              onSubmit={(e) => {
+                e.preventDefault()
+                console.log('Form submit event triggered')
+                console.log('Form values:', form.getValues())
+                console.log('Form errors:', form.formState.errors)
+                console.log('Form isValid:', form.formState.isValid)
+                form.handleSubmit(
+                  onSubmit,
+                  (errors) => {
+                    console.log('Form validation failed:', errors)
+                  }
+                )(e)
+              }}
               className='space-y-4 px-0.5'
             >
               {isEdit && (
@@ -309,26 +360,6 @@ export function ClientsActionDialog({
                         value={field.value || ''}
                       />
                     </FormControl>
-                    <FormMessage className='col-span-4 col-start-3' />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name='source'
-                render={({ field }) => (
-                  <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
-                    <FormLabel className='col-span-2 text-end'>Source *</FormLabel>
-                    <SelectDropdown
-                      defaultValue={field.value}
-                      onValueChange={field.onChange}
-                      placeholder='Select a source'
-                      className='col-span-4'
-                      items={sourceOptions.map(({ label, value }) => ({
-                        label,
-                        value,
-                      }))}
-                    />
                     <FormMessage className='col-span-4 col-start-3' />
                   </FormItem>
                 )}

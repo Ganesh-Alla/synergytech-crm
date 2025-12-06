@@ -1,10 +1,6 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
-import { createAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { randomUUID } from "crypto";
-
-// Create admin client once and reuse (better for connection pooling)
-const supabaseAdmin = createAdmin()
 
 // Cache configuration
 const CACHE_DURATION = 30 * 1000; // 30 seconds
@@ -12,8 +8,9 @@ let cachedData: unknown = null;
 let cacheTimestamp = 0;
 
 // Function to generate next client code (C001, C002, etc.)
-async function generateClientCode(): Promise<string> {
-  const { data: lastClient, error } = await supabaseAdmin
+// Uses anon key - RLS policies must allow SELECT for this to work
+async function generateClientCode(supabase: Awaited<ReturnType<typeof createClient>>): Promise<string> {
+  const { data: lastClient, error } = await supabase
     .from("clients")
     .select("client_code")
     .order("created_at", { ascending: false })
@@ -60,7 +57,8 @@ export async function GET() {
 
         // Query clients table
         const clientsStartTime = Date.now();
-        const { data: clients, error: clientsError } = await supabaseAdmin
+        const supabase = await createClient();
+        const { data: clients, error: clientsError } = await supabase
             .from("clients")
             .select("*")
             .order("created_at", { ascending: false });
@@ -123,7 +121,7 @@ export async function POST(request: Request) {
         }
 
         // Generate client_code if not provided
-        const clientCode = client.client_code || await generateClientCode();
+        const clientCode = client.client_code || await generateClientCode(supabase);
 
         // Prepare client data
         const now = new Date().toISOString();
@@ -136,8 +134,6 @@ export async function POST(request: Request) {
             contact_phone: client.contact_phone || null,
             industry: client.industry || null,
             website: client.website || null,
-            source: client.source,
-            account_owner: client.account_owner || null,
             next_follow_up_at: client.next_follow_up_at || null,
             last_interaction_at: client.last_interaction_at || null,
             notes: client.notes || null,
@@ -146,8 +142,8 @@ export async function POST(request: Request) {
             updated_at: now,
         };
 
-        // Insert client
-        const { data: insertedClient, error: insertError } = await supabaseAdmin
+        // Insert client - RLS policies will enforce permissions
+        const { data: insertedClient, error: insertError } = await supabase
             .from("clients")
             .insert(clientData)
             .select()
@@ -185,6 +181,17 @@ export async function PUT(request: Request) {
             );
         }
 
+        // Get authenticated user
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 }
+            );
+        }
+
         // Prepare update data (don't update client_code)
         const updateData = {
             company_name: client.company_name ?? null,
@@ -193,16 +200,14 @@ export async function PUT(request: Request) {
             contact_phone: client.contact_phone ?? null,
             industry: client.industry ?? null,
             website: client.website ?? null,
-            source: client.source,
-            account_owner: client.account_owner ?? null,
             next_follow_up_at: client.next_follow_up_at ?? null,
             last_interaction_at: client.last_interaction_at ?? null,
             notes: client.notes ?? null,
             updated_at: new Date().toISOString(),
         };
 
-        // Update client
-        const { data: updatedClient, error: updateError } = await supabaseAdmin
+        // Update client - RLS policies will enforce permissions
+        const { data: updatedClient, error: updateError } = await supabase
             .from("clients")
             .update(updateData)
             .eq("id", client.id)
@@ -242,8 +247,19 @@ export async function DELETE(request: Request) {
             );
         }
 
-        // Delete client
-        const { error: deleteError } = await supabaseAdmin
+        // Get authenticated user
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 }
+            );
+        }
+
+        // Delete client - RLS policies will enforce permissions
+        const { error: deleteError } = await supabase
             .from("clients")
             .delete()
             .eq("id", clientId);

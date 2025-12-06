@@ -1,6 +1,7 @@
 "use client"
 
 import {
+  BarChart3,
   CalendarDays,
   GitBranch,
   LayoutDashboard,
@@ -24,7 +25,7 @@ import Link from "next/link"
 const data = {
   navMain: [
     {
-      title: "Sales Dashboard",
+      title: "Dashboard",
       url: "/app",
       icon: LayoutDashboard,
 
@@ -40,6 +41,11 @@ const data = {
       name: "Clients",
       url: "/app/clients",
       icon: Users,
+    },
+    {
+      name:"Sales",
+      url: "/app/sales",
+      icon: BarChart3,
     },
     {
       name:"Follow Ups",

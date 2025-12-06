@@ -29,11 +29,13 @@ const leadSchema = z.object({
   status: leadStatusSchema,
   assigned_to: z.string().uuid().nullable(),
   follow_up_at: z.string().datetime().nullable(),
-  last_interaction_at: z.string().datetime().nullable(),
   notes: z.string().nullable(),
   created_by: z.string().uuid(),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
+  // Display fields from joins
+  client_code: z.string().nullable().optional(),
+  assigned_to_name: z.string().nullable().optional(),
 })
 export type Lead = z.infer<typeof leadSchema>
 

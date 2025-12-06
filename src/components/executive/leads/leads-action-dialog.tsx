@@ -27,8 +27,9 @@ import { statusOptions, sourceOptions } from './leads-columns'
 import type { Lead } from './schema'
 import { useLeadsStore } from '@/store/leadsStore'
 import { useUserStore } from '@/store/userStore'
-import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useClientsStore } from '@/store/clientsStore'
+import { useAuthUserStore } from '@/store/authUserStore'
+import { useState, useEffect } from 'react'
 
 const formSchema = z
   .object({
@@ -36,11 +37,32 @@ const formSchema = z
     contact_email: z.string().email('Invalid email address.'),
     contact_phone: z.string().nullable().optional(),
     company_name: z.string().nullable().optional(),
+    client_id: z
+      .union([
+        z.string().uuid(),
+        z.literal('').transform(() => null),
+        z.null(),
+        z.undefined(),
+      ])
+      .optional(),
     source: z.enum(['website', 'referral', 'email', 'phone', 'event', 'whatsapp']),
     status: z.enum(['new', 'in_progress', 'won', 'lost']),
-    assigned_to: z.string().uuid().nullable().optional(),
-    follow_up_at: z.string().datetime().nullable().optional(),
-    last_interaction_at: z.string().datetime().nullable().optional(),
+    assigned_to: z
+      .union([
+        z.string().uuid(),
+        z.literal('').transform(() => null),
+        z.null(),
+        z.undefined(),
+      ])
+      .optional(),
+    follow_up_at: z
+      .union([
+        z.string().datetime(),
+        z.literal('').transform(() => null),
+        z.null(),
+        z.undefined(),
+      ])
+      .optional(),
     notes: z.string().nullable().optional(),
     isEdit: z.boolean(),
   })
@@ -60,7 +82,22 @@ export function LeadsActionDialog({
   const isEdit = !!currentRow
   const { addLead, updateLead } = useLeadsStore()
   const { user: currentUser } = useUserStore()
+  const { clients, loadClients } = useClientsStore()
+  const { authUsers, loadAuthUsers } = useAuthUserStore()
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Load clients and users when dialog opens
+  useEffect(() => {
+    if (open) {
+      loadClients()
+      loadAuthUsers()
+    }
+  }, [open, loadClients, loadAuthUsers])
+
+  // Filter users to exclude admin and super_admin
+  const assignableUsers = authUsers?.filter(
+    (user) => user.permission !== 'admin' && user.permission !== 'super_admin'
+  ) || []
   
   const form = useForm<LeadForm>({
     resolver: zodResolver(formSchema),
@@ -70,11 +107,11 @@ export function LeadsActionDialog({
           contact_email: currentRow.contact_email,
           contact_phone: currentRow.contact_phone || '',
           company_name: currentRow.company_name || '',
+          client_id: currentRow.client_id || undefined,
           source: currentRow.source,
           status: currentRow.status,
-          assigned_to: currentRow.assigned_to || '',
+          assigned_to: currentRow.assigned_to || undefined,
           follow_up_at: currentRow.follow_up_at || '',
-          last_interaction_at: currentRow.last_interaction_at || '',
           notes: currentRow.notes || '',
           isEdit,
         }
@@ -83,23 +120,58 @@ export function LeadsActionDialog({
           contact_email: '',
           contact_phone: '',
           company_name: '',
+          client_id: undefined,
           source: 'website',
           status: 'new',
-          assigned_to: '',
+          assigned_to: undefined,
           follow_up_at: '',
-          last_interaction_at: '',
           notes: '',
           isEdit,
         },
   })
 
+  useEffect(() => {
+    if (open) {
+      if (isEdit && currentRow) {
+        form.reset({
+          contact_name: currentRow.contact_name,
+          contact_email: currentRow.contact_email,
+          contact_phone: currentRow.contact_phone || '',
+          company_name: currentRow.company_name || '',
+          client_id: currentRow.client_id || undefined,
+          source: currentRow.source,
+          status: currentRow.status,
+          assigned_to: currentRow.assigned_to || undefined,
+          follow_up_at: currentRow.follow_up_at || '',
+          notes: currentRow.notes || '',
+          isEdit,
+        })
+      } else {
+        form.reset({
+          contact_name: '',
+          contact_email: '',
+          contact_phone: '',
+          company_name: '',
+          client_id: undefined,
+          source: 'website',
+          status: 'new',
+          assigned_to: undefined,
+          follow_up_at: '',
+          notes: '',
+          isEdit,
+        })
+      }
+    }
+  }, [open, currentRow, isEdit, form])
+
   const onSubmit = async (values: LeadForm) => {
+    console.log('onSubmit called with values:', values)
     setIsSubmitting(true)
     try {
       const now = new Date().toISOString()
       const leadData: Lead = {
         id: currentRow?.id || '', // Will be generated on server if empty
-        client_id: currentRow?.client_id || null,
+        client_id: values.client_id || null,
         contact_name: values.contact_name,
         contact_email: values.contact_email,
         contact_phone: values.contact_phone || null,
@@ -108,7 +180,6 @@ export function LeadsActionDialog({
         status: values.status,
         assigned_to: values.assigned_to || null,
         follow_up_at: values.follow_up_at || null,
-        last_interaction_at: values.last_interaction_at || null,
         notes: values.notes || null,
         created_by: currentRow?.created_by || currentUser?.id || '',
         created_at: currentRow?.created_at || now,
@@ -153,7 +224,19 @@ export function LeadsActionDialog({
           <Form {...form}>
             <form
               id='lead-form'
-              onSubmit={form.handleSubmit(onSubmit)}
+              onSubmit={(e) => {
+                e.preventDefault()
+                console.log('Form submit event triggered')
+                console.log('Form values:', form.getValues())
+                console.log('Form errors:', form.formState.errors)
+                console.log('Form isValid:', form.formState.isValid)
+                form.handleSubmit(
+                  onSubmit,
+                  (errors) => {
+                    console.log('Form validation failed:', errors)
+                  }
+                )(e)
+              }}
               className='space-y-4 px-0.5'
             >
               <FormField
@@ -232,15 +315,71 @@ export function LeadsActionDialog({
               />
               <FormField
                 control={form.control}
+                name='client_id'
+                render={({ field }) => (
+                  <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
+                    <FormLabel className='col-span-2 text-end'>Client Code</FormLabel>
+                    <SelectDropdown
+                      defaultValue={field.value === null ? '__none__' : (field.value || undefined)}
+                      onValueChange={(value) => {
+                        field.onChange(value === '__none__' ? null : value)
+                      }}
+                      placeholder='Select a client'
+                      className='col-span-4'
+                      isControlled={true}
+                      items={[
+                        { label: 'None', value: '__none__' },
+                        ...(clients?.map((client) => ({
+                          label: client.client_code,
+                          value: client.id,
+                        })) || []),
+                      ]}
+                    />
+                    <FormMessage className='col-span-4 col-start-3' />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='assigned_to'
+                render={({ field }) => (
+                  <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
+                    <FormLabel className='col-span-2 text-end'>Assigned To</FormLabel>
+                    <SelectDropdown
+                      defaultValue={field.value === null ? '__none__' : (field.value || undefined)}
+                      onValueChange={(value) => {
+                        field.onChange(value === '__none__' ? null : value)
+                      }}
+                      placeholder='Select a user'
+                      className='col-span-4'
+                      isControlled={true}
+                      items={[
+                        { label: 'None', value: '__none__' },
+                        ...assignableUsers.map((user) => ({
+                          label: user.full_name,
+                          value: user.id,
+                        })),
+                      ]}
+                    />
+                    <FormMessage className='col-span-4 col-start-3' />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
                 name='source'
                 render={({ field }) => (
                   <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
                     <FormLabel className='col-span-2 text-end'>Source *</FormLabel>
                     <SelectDropdown
-                      defaultValue={field.value}
-                      onValueChange={field.onChange}
+                      defaultValue={field.value || 'website'}
+                      onValueChange={(value) => {
+                        console.log('Source changed to:', value)
+                        field.onChange(value)
+                      }}
                       placeholder='Select a source'
                       className='col-span-4'
+                      isControlled={true}
                       items={sourceOptions.map(({ label, value }) => ({
                         label,
                         value,
@@ -257,10 +396,14 @@ export function LeadsActionDialog({
                   <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
                     <FormLabel className='col-span-2 text-end'>Status *</FormLabel>
                     <SelectDropdown
-                      defaultValue={field.value}
-                      onValueChange={field.onChange}
+                      defaultValue={field.value || 'new'}
+                      onValueChange={(value) => {
+                        console.log('Status changed to:', value)
+                        field.onChange(value)
+                      }}
                       placeholder='Select a status'
                       className='col-span-4'
+                      isControlled={true}
                       items={statusOptions.map(({ label, value }) => ({
                         label,
                         value,

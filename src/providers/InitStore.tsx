@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { initUserStore } from "@/store/userStore";
 import { initAuthUserStore } from "@/store/authUserStore";
-import { initLeadsStore } from "@/store/leadsStore";
 import { initClientsStore } from "@/store/clientsStore";
+import { initLeadsStore } from "@/store/leadsStore";
+import { initUserStore } from "@/store/userStore";
 
 
 export function StoreInitializer() {

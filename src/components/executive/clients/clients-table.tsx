@@ -24,7 +24,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { sourceOptions } from './clients-columns'
 import { DataTablePagination } from '@/components/data-table/pagination'
 import { clientsColumns as columns} from './clients-columns'
 import { DataTableToolbar } from '@/components/data-table/data-toolbar'
@@ -147,13 +146,7 @@ if (hasLoaded && data.length === 0) {
         table={table}
         searchPlaceholder='Filter clients...'
         searchKey='contact_name'
-        filters={[
-          {
-            columnId: 'source',
-            title: 'Source',
-            options: sourceOptions.map((source) => ({ ...source })),
-          },
-        ]}
+        filters={[]}
       />
       <div className="w-full max-w-full min-w-0 rounded-md border border-dashed">
         <div className="flex flex-col items-center justify-center py-16 px-4">
@@ -201,13 +194,7 @@ if (hasLoaded && data.length === 0) {
         table={table}
         searchPlaceholder='Filter clients...'
         searchKey='contact_name'
-        filters={[
-          {
-            columnId: 'source',
-            title: 'Source',
-            options: sourceOptions.map((source) => ({ ...source })),
-          },
-        ]}
+        filters={[]}
       />
       <div className='overflow-hidden rounded-md border'>
         <Table>

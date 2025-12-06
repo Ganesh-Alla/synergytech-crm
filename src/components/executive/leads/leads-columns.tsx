@@ -33,33 +33,6 @@ export const sourceOptions = [
 
 export const leadsColumns: ColumnDef<Lead>[] = [
   {
-    id: 'select',
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && 'indeterminate')
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label='Select all'
-        className='translate-y-[2px]'
-      />
-    ),
-    meta: {
-      className: cn('max-md:sticky start-0 z-10 rounded-tl-[inherit]'),
-    },
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label='Select row'
-        className='translate-y-[2px]'
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
     id: 'contact_name',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Contact Name' />
@@ -99,6 +72,26 @@ export const leadsColumns: ColumnDef<Lead>[] = [
       return <LongText className='max-w-36'>{company || '-'}</LongText>
     },
     meta: { className: 'w-36' },
+  },
+  {
+    accessorKey: 'client_code',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Client Code' />
+    ),
+    cell: ({ row }) => {
+      const clientCode = row.getValue('client_code') as string | null
+      return <div className='w-fit ps-2 text-nowrap font-medium'>{clientCode || '-'}</div>
+    },
+  },
+  {
+    accessorKey: 'assigned_to_name',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Assigned To' />
+    ),
+    cell: ({ row }) => {
+      const assignedToName = row.getValue('assigned_to_name') as string | null
+      return <div className='w-fit ps-2 text-nowrap'>{assignedToName || '-'}</div>
+    },
   },
   {
     accessorKey: 'source',
@@ -151,21 +144,6 @@ export const leadsColumns: ColumnDef<Lead>[] = [
       return (
         <div className='text-sm'>
           {format(new Date(followUp), 'MMM dd, yyyy')}
-        </div>
-      )
-    },
-  },
-  {
-    accessorKey: 'last_interaction_at',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Last Interaction' />
-    ),
-    cell: ({ row }) => {
-      const lastInteraction = row.getValue('last_interaction_at') as string | null
-      if (!lastInteraction) return <div className='text-muted-foreground'>-</div>
-      return (
-        <div className='text-sm'>
-          {format(new Date(lastInteraction), 'MMM dd, yyyy')}
         </div>
       )
     },

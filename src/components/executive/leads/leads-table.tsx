@@ -321,7 +321,6 @@ if (hasLoaded && data.length === 0) {
         </Table>
       </div>
       <DataTablePagination table={table} className='mt-auto' />
-      {/* <DataTableBulkActions table={table} /> */}
     </div>
   )
 }
