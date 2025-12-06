@@ -7,51 +7,6 @@ const CACHE_DURATION = 30 * 1000; // 30 seconds
 let cachedData: unknown = null;
 let cacheTimestamp = 0;
 
-// Helper function to enrich lead data with client_code and assigned_to_name
-async function enrichLeads(supabase: Awaited<ReturnType<typeof createClient>>, leads: any[]) {
-    if (!leads || leads.length === 0) {
-        return leads;
-    }
-
-    const clientIds = [...new Set(leads.map((lead: any) => lead.client_id).filter(Boolean))];
-    const assignedToIds = [...new Set(leads.map((lead: any) => lead.assigned_to).filter(Boolean))];
-
-    // Fetch clients
-    const clientsMap = new Map();
-    if (clientIds.length > 0) {
-        const { data: clients } = await supabase
-            .from("clients")
-            .select("id, client_code")
-            .in("id", clientIds);
-        if (clients) {
-            clients.forEach((client: any) => {
-                clientsMap.set(client.id, client.client_code);
-            });
-        }
-    }
-
-    // Fetch profiles for assigned_to
-    const profilesMap = new Map();
-    if (assignedToIds.length > 0) {
-        const { data: profiles } = await supabase
-            .from("profiles")
-            .select("id, full_name")
-            .in("id", assignedToIds);
-        if (profiles) {
-            profiles.forEach((profile: any) => {
-                profilesMap.set(profile.id, profile.full_name);
-            });
-        }
-    }
-
-    // Transform the data to include joined fields
-    return leads.map((lead: any) => ({
-        ...lead,
-        client_code: lead.client_id ? clientsMap.get(lead.client_id) || null : null,
-        assigned_to_name: lead.assigned_to ? profilesMap.get(lead.assigned_to) || null : null,
-    }));
-}
-
 export async function GET() {
     try {
         // Check cache first
@@ -75,8 +30,6 @@ export async function GET() {
             );
         }
 
-        const totalStartTime = Date.now();
-
         // Query leads table
         const { data: leads, error: leadsError } = await supabase
             .from("leads")
@@ -94,17 +47,11 @@ export async function GET() {
             return NextResponse.json([]);
         }
 
-        // Enrich leads with client_code and assigned_to_name
-        const transformedLeads = await enrichLeads(supabase, leads);
-
-        const totalDuration = Date.now() - totalStartTime;
-        console.log(`[leads] TOTAL: ${totalDuration}ms, returned ${transformedLeads.length} records`);
-
         // Update cache
-        cachedData = transformedLeads;
+        cachedData = leads;
         cacheTimestamp = now;
 
-        return NextResponse.json(transformedLeads, {
+        return NextResponse.json(leads, {
             headers: {
                 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
             },
@@ -139,40 +86,14 @@ export async function POST(request: Request) {
                 { status: 401 }
             );
         }
-
-        // Verify user has permission to create leads
-        const { data: profile, error: profileError } = await supabase
-            .from("profiles")
-            .select("permission")
-            .eq("id", user.id)
-            .single();
-
-        if (profileError || !profile) {
-            console.error("Profile error:", profileError);
-            return NextResponse.json(
-                { error: "User profile not found" },
-                { status: 403 }
-            );
-        }
-
-        // Check if user has required permission
-        const allowedPermissions = ['write', 'full_access', 'full', 'admin', 'super_admin'];
-        if (!allowedPermissions.includes(profile.permission)) {
-            return NextResponse.json(
-                { error: `Insufficient permissions. Required: ${allowedPermissions.join(', ')}. Current: ${profile.permission}` },
-                { status: 403 }
-            );
-        }
-
         // Prepare lead data
         const now = new Date().toISOString();
         const leadData = {
             id: lead.id || randomUUID(),
-            client_id: lead.client_id || null,
+            client_code: lead.client_code || null,
             contact_name: lead.contact_name,
             contact_email: lead.contact_email,
             contact_phone: lead.contact_phone || null,
-            company_name: lead.company_name || null,
             source: lead.source,
             status: lead.status,
             assigned_to: lead.assigned_to || null,
@@ -184,7 +105,7 @@ export async function POST(request: Request) {
         };
 
         // Insert lead - RLS policies will enforce permissions
-        const { data: insertedLead, error: insertError } = await supabase
+        const { error: insertError } = await supabase
             .from("leads")
             .insert(leadData)
             .select()
@@ -202,9 +123,7 @@ export async function POST(request: Request) {
         cachedData = null;
         cacheTimestamp = 0;
 
-        // Enrich the inserted lead with client_code and assigned_to_name
-        const enrichedLead = await enrichLeads(supabase, [insertedLead]);
-        return NextResponse.json(enrichedLead[0]);
+        return NextResponse.json({ message: "Success" }, { status: 200 });
     } catch (error) {
         console.error("POST API error:", error);
         return NextResponse.json(
@@ -238,11 +157,10 @@ export async function PUT(request: Request) {
 
         // Prepare update data
         const updateData = {
-            client_id: lead.client_id ?? null,
+            client_code: lead.client_code ?? null,
             contact_name: lead.contact_name,
             contact_email: lead.contact_email,
             contact_phone: lead.contact_phone ?? null,
-            company_name: lead.company_name ?? null,
             source: lead.source,
             status: lead.status,
             assigned_to: lead.assigned_to ?? null,
@@ -252,7 +170,7 @@ export async function PUT(request: Request) {
         };
 
         // Update lead - RLS policies will enforce permissions
-        const { data: updatedLead, error: updateError } = await supabase
+        const { error: updateError } = await supabase
             .from("leads")
             .update(updateData)
             .eq("id", lead.id)
@@ -271,8 +189,7 @@ export async function PUT(request: Request) {
         cacheTimestamp = 0;
 
         // Enrich the updated lead with client_code and assigned_to_name
-        const enrichedLead = await enrichLeads(supabase, [updatedLead]);
-        return NextResponse.json(enrichedLead[0]);
+        return NextResponse.json({ message: "Success" }, { status: 200 });
     } catch (error) {
         console.error("PUT API error:", error);
         return NextResponse.json(

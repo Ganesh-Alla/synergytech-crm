@@ -1,10 +1,10 @@
 import type{  ColumnDef } from '@tanstack/react-table'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
 import { Badge } from '@/components/ui/badge'
-import { Checkbox } from '@/components/ui/checkbox'
 import { LongText } from '@/components/ui/long-text'
 import { cn } from '@/lib/utils'
-import type{  Lead, LeadStatus, LeadSource } from './schema'
+import type{  Lead } from './schema'
+import type{  LeadStatus } from './schema'
 import { DataTableRowActions } from './data-table-row-actions'
 import { format } from 'date-fns'
 
@@ -63,17 +63,6 @@ export const leadsColumns: ColumnDef<Lead>[] = [
     },
   },
   {
-    accessorKey: 'company_name',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Company' />
-    ),
-    cell: ({ row }) => {
-      const company = row.getValue('company_name') as string | null
-      return <LongText className='max-w-36'>{company || '-'}</LongText>
-    },
-    meta: { className: 'w-36' },
-  },
-  {
     accessorKey: 'client_code',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Client Code' />
@@ -99,7 +88,7 @@ export const leadsColumns: ColumnDef<Lead>[] = [
       <DataTableColumnHeader column={column} title='Source' />
     ),
     cell: ({ row }) => {
-      const source = row.getValue('source') as LeadSource
+      const source = row.getValue('source') as string
       return (
         <Badge variant='outline' className='capitalize'>
           {source}
@@ -118,7 +107,7 @@ export const leadsColumns: ColumnDef<Lead>[] = [
     ),
     cell: ({ row }) => {
       const { status } = row.original
-      const badgeColor = statusColors.get(status)
+      const badgeColor = statusColors.get(status as LeadStatus)
       return (
         <div className='flex space-x-2'>
           <Badge variant='outline' className={cn('capitalize', badgeColor)}>
@@ -146,6 +135,15 @@ export const leadsColumns: ColumnDef<Lead>[] = [
           {format(new Date(followUp), 'MMM dd, yyyy')}
         </div>
       )
+    },
+  },{
+    accessorKey: 'notes',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Notes' />
+    ),
+    cell: ({ row }) => {
+      const notes = row.getValue('notes') as string | null
+      return <LongText className='max-w-36'>{notes || '-'}</LongText>
     },
   },
   {

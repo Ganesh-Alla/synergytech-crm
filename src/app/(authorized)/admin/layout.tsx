@@ -4,7 +4,6 @@ import { AppSidebar } from "@/components/admin/layout/app-sidebar";
 import { SiteHeader } from "@/components/dashboard/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
-import { AuthUserStoreInitializer } from "@/providers/InitStore";
 import { useUserStore } from "@/store/userStore"
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -46,7 +45,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <SiteHeader fixed/>
             {children}
           </SidebarInset>
-          <AuthUserStoreInitializer />
         </SidebarProvider>
     )
 }

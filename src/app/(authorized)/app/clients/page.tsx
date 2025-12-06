@@ -2,7 +2,6 @@
 import { UserPlus } from "lucide-react"
 import { Main } from "@/components/dashboard/main"
 import { Button } from "@/components/ui/button"
-import { ClientsStoreInitializer } from "@/providers/InitStore"
 import { useClientsDialog } from "@/store/useClientsDialog"
 import { ClientsTable } from "@/components/executive/clients/clients-table"
 import { ClientsDialogs } from "@/components/executive/clients/clients-dialog"
@@ -10,8 +9,6 @@ import { ClientsDialogs } from "@/components/executive/clients/clients-dialog"
 const Clients = () => {
   const { setOpenDialog } = useClientsDialog()
   return (
-    <>
-      <ClientsStoreInitializer />
       <Main className='flex flex-1 flex-col gap-4 sm:gap-6'>
         <div className='flex flex-wrap items-end justify-between gap-2'>
           <div>
@@ -29,7 +26,6 @@ const Clients = () => {
         <ClientsTable />
         <ClientsDialogs />
       </Main>
-    </>
   )
 }
 

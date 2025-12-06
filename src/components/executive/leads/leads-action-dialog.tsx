@@ -24,8 +24,8 @@ import { Input } from '@/components/ui/input'
 import { SelectDropdown } from '@/components/ui/select-dropdown'
 import { Textarea } from '@/components/ui/textarea'
 import { statusOptions, sourceOptions } from './leads-columns'
-import type { Lead } from './schema'
 import { useLeadsStore } from '@/store/leadsStore'
+import type { Lead } from './schema'
 import { useUserStore } from '@/store/userStore'
 import { useClientsStore } from '@/store/clientsStore'
 import { useAuthUserStore } from '@/store/authUserStore'
@@ -36,10 +36,9 @@ const formSchema = z
     contact_name: z.string().min(1, 'Contact Name is required.'),
     contact_email: z.string().email('Invalid email address.'),
     contact_phone: z.string().nullable().optional(),
-    company_name: z.string().nullable().optional(),
-    client_id: z
+    client_code: z
       .union([
-        z.string().uuid(),
+        z.string(),
         z.literal('').transform(() => null),
         z.null(),
         z.undefined(),
@@ -49,7 +48,7 @@ const formSchema = z
     status: z.enum(['new', 'in_progress', 'won', 'lost']),
     assigned_to: z
       .union([
-        z.string().uuid(),
+        z.uuid(),
         z.literal('').transform(() => null),
         z.null(),
         z.undefined(),
@@ -57,7 +56,7 @@ const formSchema = z
       .optional(),
     follow_up_at: z
       .union([
-        z.string().datetime(),
+        z.iso.datetime(),
         z.literal('').transform(() => null),
         z.null(),
         z.undefined(),
@@ -106,10 +105,9 @@ export function LeadsActionDialog({
           contact_name: currentRow.contact_name,
           contact_email: currentRow.contact_email,
           contact_phone: currentRow.contact_phone || '',
-          company_name: currentRow.company_name || '',
-          client_id: currentRow.client_id || undefined,
-          source: currentRow.source,
-          status: currentRow.status,
+          client_code: currentRow.client_code || undefined,
+          source: currentRow.source as LeadForm['source'],
+          status: currentRow.status as LeadForm['status'],
           assigned_to: currentRow.assigned_to || undefined,
           follow_up_at: currentRow.follow_up_at || '',
           notes: currentRow.notes || '',
@@ -119,8 +117,7 @@ export function LeadsActionDialog({
           contact_name: '',
           contact_email: '',
           contact_phone: '',
-          company_name: '',
-          client_id: undefined,
+          client_code: undefined,
           source: 'website',
           status: 'new',
           assigned_to: undefined,
@@ -137,10 +134,9 @@ export function LeadsActionDialog({
           contact_name: currentRow.contact_name,
           contact_email: currentRow.contact_email,
           contact_phone: currentRow.contact_phone || '',
-          company_name: currentRow.company_name || '',
-          client_id: currentRow.client_id || undefined,
-          source: currentRow.source,
-          status: currentRow.status,
+          client_code: currentRow.client_code || undefined,
+          source: currentRow.source as LeadForm['source'],
+          status: currentRow.status as LeadForm['status'],
           assigned_to: currentRow.assigned_to || undefined,
           follow_up_at: currentRow.follow_up_at || '',
           notes: currentRow.notes || '',
@@ -151,8 +147,7 @@ export function LeadsActionDialog({
           contact_name: '',
           contact_email: '',
           contact_phone: '',
-          company_name: '',
-          client_id: undefined,
+          client_code: undefined,
           source: 'website',
           status: 'new',
           assigned_to: undefined,
@@ -171,11 +166,10 @@ export function LeadsActionDialog({
       const now = new Date().toISOString()
       const leadData: Lead = {
         id: currentRow?.id || '', // Will be generated on server if empty
-        client_id: values.client_id || null,
+        client_code: values.client_code || null,
         contact_name: values.contact_name,
         contact_email: values.contact_email,
         contact_phone: values.contact_phone || null,
-        company_name: values.company_name || null,
         source: values.source,
         status: values.status,
         assigned_to: values.assigned_to || null,
@@ -297,25 +291,7 @@ export function LeadsActionDialog({
               />
               <FormField
                 control={form.control}
-                name='company_name'
-                render={({ field }) => (
-                  <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
-                    <FormLabel className='col-span-2 text-end'>Company</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder='Acme Inc.'
-                        className='col-span-4'
-                        {...field}
-                        value={field.value || ''}
-                      />
-                    </FormControl>
-                    <FormMessage className='col-span-4 col-start-3' />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name='client_id'
+                name='client_code'
                 render={({ field }) => (
                   <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
                     <FormLabel className='col-span-2 text-end'>Client Code</FormLabel>
@@ -331,7 +307,7 @@ export function LeadsActionDialog({
                         { label: 'None', value: '__none__' },
                         ...(clients?.map((client) => ({
                           label: client.client_code,
-                          value: client.id,
+                          value: client.client_code,
                         })) || []),
                       ]}
                     />

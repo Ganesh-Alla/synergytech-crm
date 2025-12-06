@@ -1,8 +1,12 @@
 "use client"
 
 import { create } from "zustand"
-import type { Lead } from "@/components/executive/leads/schema"
 import { toast } from "sonner"
+import { useAuthUserStore } from "./authUserStore"
+import type { Lead } from "@/components/executive/leads/schema"
+
+// Re-export Lead type for convenience
+export type { Lead }
 
 interface LeadsStore {
   leads: Lead[] | null
@@ -38,8 +42,13 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
       set({ leadsLoading: true })
     }
     try {
-      const leadsData = await fetch('/api/leads').then(res => res.json())
-      set({ leads: leadsData as Lead[], hasLoaded: true })
+      const leads = await fetch('/api/leads').then(res => res.json())
+      const leadsData = leads.map((lead: Lead) => ({
+        ...lead,
+        assigned_to_name: useAuthUserStore.getState().authUsers?.find(user => user.id === lead.assigned_to)?.full_name ?? null,
+      }))
+      console.log('leadsData', leadsData)
+      set({ leads: leadsData, hasLoaded: true })
     } catch (error) {
       console.error('Error loading Leads:', error)
       set({ hasLoaded: true }) // Mark as loaded even on error to prevent retries
@@ -62,12 +71,18 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
         throw new Error(errorMessage)
       }
       const data = await response.json()
-      toast.success("Lead added successfully", { id: toastId })
-      const currentLeads = get().leads
-      if (currentLeads && Array.isArray(currentLeads)) {
-        set({ leads: [data, ...currentLeads] })
-      } else {
-        set({ leads: [data] })
+      if(data.message === "Success"){
+        toast.success("Lead added successfully", { id: toastId })
+        const currentLeads = get().leads
+        if (currentLeads && Array.isArray(currentLeads)) {
+          set({ leads: [{...lead, assigned_to_name: useAuthUserStore.getState().authUsers?.find(user => user.id === lead.assigned_to)?.full_name ?? null}, ...currentLeads] })
+        } else {
+          set({ leads: [{...lead, assigned_to_name: useAuthUserStore.getState().authUsers?.find(user => user.id === lead.assigned_to)?.full_name ?? null}] })
+        }
+      }
+      else{
+        const errorMessage = data.error || `Failed to add Lead (${response.status})`
+        throw new Error(errorMessage)
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to add Lead'
@@ -91,12 +106,30 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
         throw new Error(errorMessage)
       }
       const data = await response.json()
+      console.log('data', data)
+      if(data.message === "Success"){
       toast.success("Lead updated successfully", { id: toastId })
-      const currentLeads = get().leads
-      if (currentLeads && Array.isArray(currentLeads)) {
-        set({ 
-          leads: currentLeads.map(l => l.id === data.id ? data : l)
-        })
+        const currentLeads = get().leads
+        if (currentLeads && Array.isArray(currentLeads)) {
+          set({
+            leads: currentLeads.map(l => {
+              if (l.id !== lead.id) return l;
+              // Check if assigned_to changed
+              let assigned_to_name = l.assigned_to_name;
+              if (l.assigned_to !== lead.assigned_to) {
+                assigned_to_name = useAuthUserStore.getState().authUsers?.find(user => user.id === lead.assigned_to)?.full_name ?? null;
+              }
+              return {
+                ...lead,
+                assigned_to_name
+              };
+            })
+          })
+        }
+      }
+      else{
+        const errorMessage = data.error || `Failed to update Lead (${response.status})`
+        throw new Error(errorMessage)
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to update Lead'
@@ -138,6 +171,7 @@ export const initLeadsStore = () => {
   const leadsStore = useLeadsStore.getState()
   
   // Only load if we haven't loaded yet
+  // Note: This assumes authUserStore is already loaded (handled by LeadsStoreInitializer)
   if (!leadsStore.hasLoaded) {
     leadsStore.loadLeads()
   }

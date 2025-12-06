@@ -4,14 +4,11 @@ import { Main } from "@/components/dashboard/main"
 import { LeadsDialogs } from "@/components/executive/leads/leads-dialog"
 import { LeadsTable } from "@/components/executive/leads/leads-table"
 import { Button } from "@/components/ui/button"
-import { LeadsStoreInitializer } from "@/providers/InitStore"
 import { useLeadsDialog } from "@/store/useLeadsDialog"
 
 const Leads = () => {
   const { setOpenDialog } = useLeadsDialog()
   return (
-    <>
-      <LeadsStoreInitializer />
       <Main className='flex flex-1 flex-col gap-4 sm:gap-6'>
         <div className='flex flex-wrap items-end justify-between gap-2'>
           <div>
@@ -29,7 +26,6 @@ const Leads = () => {
         <LeadsTable />
         <LeadsDialogs />
       </Main>
-    </>
   )
 }
 

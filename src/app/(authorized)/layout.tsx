@@ -1,6 +1,7 @@
 "use client"
 import { redirect } from "next/navigation"
 import { useUserStore } from "@/store/userStore"
+import { AuthUserStoreInitializer } from "@/providers/InitStore"
 
 export default function AuthorizedLayout({ children }: { children: React.ReactNode }) {
     const { user: userData, initialized, userLoading } = useUserStore()
@@ -24,5 +25,7 @@ export default function AuthorizedLayout({ children }: { children: React.ReactNo
     }
 
     // Render children if authenticated
-    return <>{children}</>
+    return <>{children}
+    <AuthUserStoreInitializer />
+    </>
 }

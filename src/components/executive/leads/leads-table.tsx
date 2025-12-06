@@ -29,6 +29,7 @@ import { DataTablePagination } from '@/components/data-table/pagination'
 import { leadsColumns as columns} from './leads-columns'
 import { DataTableToolbar } from '@/components/data-table/data-toolbar'
 import { useLeadsStore } from '@/store/leadsStore'
+import { useAuthUserStore } from '@/store/authUserStore'
 import { AlertCircle, Home, RefreshCw, Users } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
@@ -37,6 +38,7 @@ import { Button } from '@/components/ui/button'
 export function LeadsTable() {
   const router = useRouter()
   const { leads, leadsLoading, hasLoaded } = useLeadsStore()
+  const { authUsersLoading } = useAuthUserStore()
   const data = leads ?? []
   // Local UI-only states
   const [rowSelection, setRowSelection] = useState({})
@@ -97,7 +99,7 @@ export function LeadsTable() {
 //   }, [table, ensurePageInRange])
 
 // Loading state - only show if we don't have data yet
-if (leadsLoading && !leads) {
+if ((leadsLoading || authUsersLoading) && !leads) {
   return (
     <div className="w-full space-y-4">
       <div className="flex items-center justify-between">

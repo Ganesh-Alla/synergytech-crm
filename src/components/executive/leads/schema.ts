@@ -19,23 +19,20 @@ const leadSourceSchema = z.union([
 export type LeadSource = z.infer<typeof leadSourceSchema>
 
 const leadSchema = z.object({
-  id: z.string().uuid(),
-  client_id: z.string().uuid().nullable(),
+  id: z.uuid(),
+  client_code: z.string().nullable().optional(),
   contact_name: z.string(),
-  contact_email: z.string().email(),
+  contact_email: z.email(),
   contact_phone: z.string().nullable(),
-  company_name: z.string().nullable(),
   source: leadSourceSchema,
   status: leadStatusSchema,
-  assigned_to: z.string().uuid().nullable(),
-  follow_up_at: z.string().datetime().nullable(),
+  assigned_to: z.uuid().nullable().optional(),
+  assigned_to_name: z.string().nullable().optional(), // Computed field, not from DB
+  follow_up_at: z.iso.datetime().nullable(),
   notes: z.string().nullable(),
-  created_by: z.string().uuid(),
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime(),
-  // Display fields from joins
-  client_code: z.string().nullable().optional(),
-  assigned_to_name: z.string().nullable().optional(),
+  created_by: z.uuid(),
+  created_at: z.iso.datetime(),
+  updated_at: z.iso.datetime(),
 })
 export type Lead = z.infer<typeof leadSchema>
 

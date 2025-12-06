@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { initAuthUserStore } from "@/store/authUserStore";
+import { initAuthUserStore, useAuthUserStore } from "@/store/authUserStore";
 import { initClientsStore } from "@/store/clientsStore";
 import { initLeadsStore } from "@/store/leadsStore";
 import { initUserStore } from "@/store/userStore";
@@ -43,15 +43,25 @@ export function AuthUserStoreInitializer() {
 
 export function LeadsStoreInitializer() {
   const initialized = useRef(false);
+  const { hasLoaded: authUsersLoaded } = useAuthUserStore();
+  
   useEffect(() => {
     // Prevent multiple initializations in React strict mode
     if (initialized.current) return;
+    
+    // Wait for authUserStore to be loaded before initializing leadsStore
+    if (!authUsersLoaded) {
+      // If authUserStore hasn't loaded yet, trigger its initialization
+      initAuthUserStore();
+      return; // Wait for next render when authUsersLoaded becomes true
+    }
+    
     initialized.current = true;
     const unsubscribe = initLeadsStore();
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, []);
+  }, [authUsersLoaded]);
   return null;
 }
 
