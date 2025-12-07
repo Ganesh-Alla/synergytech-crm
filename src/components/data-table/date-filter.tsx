@@ -87,7 +87,7 @@ const PRESETS: Preset[] = [
 
 /** The DateRangePicker component allows a user to select a range of dates */
 export const DateRangePicker: FC<DateRangePickerProps> = ({
-  initialDateFrom = new Date(new Date().setHours(0, 0, 0, 0)),
+  initialDateFrom,
   initialDateTo,
   initialCompareFrom,
   initialCompareTo,
@@ -97,12 +97,16 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
 }): React.JSX.Element => {
   const [isOpen, setIsOpen] = useState(false)
 
-  const [range, setRange] = useState<DateRange>({
-    from: getDateAdjustedForTimezone(initialDateFrom),
-    to: initialDateTo
-      ? getDateAdjustedForTimezone(initialDateTo)
-      : getDateAdjustedForTimezone(initialDateFrom)
-  })
+  const [range, setRange] = useState<DateRange | undefined>(
+    initialDateFrom
+      ? {
+          from: getDateAdjustedForTimezone(initialDateFrom),
+          to: initialDateTo
+            ? getDateAdjustedForTimezone(initialDateTo)
+            : getDateAdjustedForTimezone(initialDateFrom)
+        }
+      : undefined
+  )
   const [rangeCompare, setRangeCompare] = useState<DateRange | undefined>(
     initialCompareFrom
       ? {
@@ -117,6 +121,8 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
   // Refs to store the values of range and rangeCompare when the date picker is opened
   const openedRangeRef = useRef<DateRange | undefined>(undefined)
   const openedRangeCompareRef = useRef<DateRange | undefined>(undefined)
+  const initializedRangeRef = useRef<DateRange | undefined>(undefined)
+  const prevIsOpenRef = useRef<boolean>(false)
 
   const [selectedPreset, setSelectedPreset] = useState<string | undefined>(undefined)
 
@@ -221,6 +227,11 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
   }
 
   const checkPreset = (): void => {
+    if (!range) {
+      setSelectedPreset(undefined)
+      return
+    }
+
     for (const preset of PRESETS) {
       const presetRange = getPresetRange(preset.name)
 
@@ -249,19 +260,23 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
   }
 
   const resetValues = (): void => {
-    setRange({
-      from:
-        typeof initialDateFrom === 'string'
-          ? getDateAdjustedForTimezone(initialDateFrom)
-          : initialDateFrom,
-      to: initialDateTo
-        ? typeof initialDateTo === 'string'
-          ? getDateAdjustedForTimezone(initialDateTo)
-          : initialDateTo
-        : typeof initialDateFrom === 'string'
-          ? getDateAdjustedForTimezone(initialDateFrom)
-          : initialDateFrom
-    })
+    setRange(
+      initialDateFrom
+        ? {
+            from:
+              typeof initialDateFrom === 'string'
+                ? getDateAdjustedForTimezone(initialDateFrom)
+                : initialDateFrom,
+            to: initialDateTo
+              ? typeof initialDateTo === 'string'
+                ? getDateAdjustedForTimezone(initialDateTo)
+                : initialDateTo
+              : typeof initialDateFrom === 'string'
+                ? getDateAdjustedForTimezone(initialDateFrom)
+                : initialDateFrom
+          }
+        : undefined
+    )
     setRangeCompare(
       initialCompareFrom
         ? {
@@ -281,9 +296,9 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
     )
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: checkPreset depends on range, which is in dependencies
   useEffect(() => {
     checkPreset()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [range])
 
   const PresetButton = ({
@@ -320,13 +335,45 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
     )
   }
 
+  // Sync range with initialDateFrom/initialDateTo when they change (e.g., when reset filters is clicked)
   useEffect(() => {
-    if (isOpen) {
-      openedRangeRef.current = range
-      openedRangeCompareRef.current = rangeCompare
+    if (!isOpen) {
+      // Only update when dialog is closed to avoid interfering with user selection
+      if (initialDateFrom) {
+        setRange({
+          from: getDateAdjustedForTimezone(initialDateFrom),
+          to: initialDateTo
+            ? getDateAdjustedForTimezone(initialDateTo)
+            : getDateAdjustedForTimezone(initialDateFrom)
+        })
+      } else {
+        setRange(undefined)
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen])
+  }, [initialDateFrom, initialDateTo, isOpen])
+
+  useEffect(() => {
+    // Only run when isOpen changes from false to true (dialog opening)
+    if (isOpen && !prevIsOpenRef.current) {
+      // Initialize range to today if undefined when dialog opens
+      if (!range) {
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        const initialRange = { from: today, to: today }
+        setRange(initialRange)
+        openedRangeRef.current = undefined // Store undefined to track that it was originally undefined
+        initializedRangeRef.current = initialRange // Store the initialized range for comparison
+      } else {
+        openedRangeRef.current = range
+        initializedRangeRef.current = undefined
+      }
+      openedRangeCompareRef.current = rangeCompare
+    } else if (!isOpen && prevIsOpenRef.current) {
+      // Reset when dialog closes
+      initializedRangeRef.current = undefined
+    }
+    prevIsOpenRef.current = isOpen
+  }, [isOpen, range, rangeCompare])
 
   return (
     <Dialog
@@ -343,9 +390,13 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
           <CalendarIcon className="mr-2 h-4 w-4" />
           <div className="text-right">
             <div className="py-1">
-              <div>{`${formatDate(range.from, locale)}${
-                range.to != null ? ' - ' + formatDate(range.to, locale) : ''
-              }`}</div>
+              {range ? (
+                <div>{`${formatDate(range.from, locale)}${
+                  range.to != null ? ' - ' + formatDate(range.to, locale) : ''
+                }`}</div>
+              ) : (
+                <div className="text-muted-foreground">Select date range</div>
+              )}
             </div>
             {rangeCompare != null && (
               <div className="opacity-60 text-xs -mt-1">
@@ -373,28 +424,37 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
                   defaultChecked={Boolean(rangeCompare)}
                   onCheckedChange={(checked: boolean) => {
                     if (checked) {
-                      if (!range.to) {
+                      // Ensure range is defined before using it
+                      const currentRange = range || (() => {
+                        const today = new Date()
+                        today.setHours(0, 0, 0, 0)
+                        const newRange = { from: today, to: today }
+                        setRange(newRange)
+                        return newRange
+                      })()
+                      
+                      if (!currentRange.to) {
                         setRange({
-                          from: range.from,
-                          to: range.from
+                          from: currentRange.from,
+                          to: currentRange.from
                         })
                       }
                       setRangeCompare({
                         from: new Date(
-                          range.from.getFullYear(),
-                          range.from.getMonth(),
-                          range.from.getDate() - 365
+                          currentRange.from.getFullYear(),
+                          currentRange.from.getMonth(),
+                          currentRange.from.getDate() - 365
                         ),
-                        to: range.to
+                        to: currentRange.to
                           ? new Date(
-                            range.to.getFullYear() - 1,
-                            range.to.getMonth(),
-                            range.to.getDate()
+                            currentRange.to.getFullYear() - 1,
+                            currentRange.to.getMonth(),
+                            currentRange.to.getDate()
                           )
                           : new Date(
-                            range.from.getFullYear() - 1,
-                            range.from.getMonth(),
-                            range.from.getDate()
+                            currentRange.from.getFullYear() - 1,
+                            currentRange.from.getMonth(),
+                            currentRange.from.getDate()
                           )
                       })
                     } else {
@@ -409,27 +469,35 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
             <div className="flex flex-col gap-2">
                   <div className="flex gap-2">
                     <DateInput
-                      value={range.from}
+                      value={range?.from}
                       onChange={(date) => {
+                        if (!range) {
+                          setRange({ from: date, to: date })
+                          return
+                        }
                         const toDate =
                           range.to == null || date > range.to ? date : range.to
-                        setRange((prevRange) => ({
-                          ...prevRange,
+                        setRange({
+                          ...range,
                           from: date,
                           to: toDate
-                        }))
+                        })
                       }}
                     />
                     <div className="py-1">-</div>
                     <DateInput
-                      value={range.to}
+                      value={range?.to}
                       onChange={(date) => {
+                        if (!range) {
+                          setRange({ from: date, to: date })
+                          return
+                        }
                         const fromDate = date < range.from ? date : range.from
-                        setRange((prevRange) => ({
-                          ...prevRange,
+                        setRange({
+                          ...range,
                           from: fromDate,
                           to: date
-                        }))
+                        })
                       }}
                     />
                   </div>
@@ -460,7 +528,7 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
                       <DateInput
                         value={rangeCompare?.to}
                         onChange={(date) => {
-                          if (rangeCompare && rangeCompare.from) {
+                          if (rangeCompare?.from) {
                             const compareFromDate =
                               date < rangeCompare.from
                                 ? date
@@ -498,9 +566,14 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
                 onSelect={(value: { from?: Date, to?: Date } | undefined) => {
                   if (value?.from != null) {
                     setRange({ from: value.from, to: value?.to })
+                  } else if (value === undefined) {
+                    // User cleared the selection
+                    const today = new Date()
+                    today.setHours(0, 0, 0, 0)
+                    setRange({ from: today, to: today })
                   }
                 }}
-                selected={range}
+                selected={range ?? undefined}
                 numberOfMonths={isSmallScreen ? 1 : 2}
                 defaultMonth={
                   new Date(
@@ -539,11 +612,23 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
           <Button
             onClick={() => {
               setIsOpen(false)
-              if (
-                !areRangesEqual(range, openedRangeRef.current) ||
-                !areRangesEqual(rangeCompare, openedRangeCompareRef.current)
-              ) {
-                onUpdate?.({ range, rangeCompare })
+              if (range) {
+                // If range was originally undefined and we initialized it, check if user changed it
+                if (openedRangeRef.current === undefined && initializedRangeRef.current) {
+                  // If range is still the same as initialized, don't call onUpdate (keep it undefined)
+                  if (areRangesEqual(range, initializedRangeRef.current)) {
+                    return // User didn't change from the default, so don't update
+                  }
+                }
+                
+                const hasRangeChanged = openedRangeRef.current 
+                  ? !areRangesEqual(range, openedRangeRef.current)
+                  : true // If originally undefined, any selection is a change
+                const hasCompareChanged = !areRangesEqual(rangeCompare, openedRangeCompareRef.current)
+                
+                if (hasRangeChanged || hasCompareChanged) {
+                  onUpdate?.({ range, rangeCompare })
+                }
               }
             }}
           >

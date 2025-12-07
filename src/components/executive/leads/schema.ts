@@ -28,7 +28,7 @@ const leadSchema = z.object({
   status: leadStatusSchema,
   assigned_to: z.uuid().nullable().optional(),
   assigned_to_name: z.string().nullable().optional(), // Computed field, not from DB
-  follow_up_at: z.iso.datetime().nullable(),
+  follow_up_at: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
   notes: z.string().nullable(),
   created_by: z.uuid(),
   created_at: z.iso.datetime(),

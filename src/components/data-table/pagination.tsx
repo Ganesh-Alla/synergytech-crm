@@ -1,11 +1,10 @@
+import type { Table } from '@tanstack/react-table'
 import {
     ChevronLeftIcon,
     ChevronRightIcon,
     ChevronsLeftIcon,
     ChevronsRightIcon,
   } from 'lucide-react'
-  import { type Table } from '@tanstack/react-table'
-  import { cn, getPageNumbers } from '@/lib/utils'
   import { Button } from '@/components/ui/button'
   import {
     Select,
@@ -14,15 +13,20 @@ import {
     SelectTrigger,
     SelectValue,
   } from '@/components/ui/select'
+  import { cn, getPageNumbers } from '@/lib/utils'
   
   type DataTablePaginationProps<TData> = {
     table: Table<TData>
     className?: string
+    filteredRowCount?: number
+    totalRowCount?: number
   }
   
   export function DataTablePagination<TData>({
     table,
     className,
+    filteredRowCount,
+    totalRowCount,
   }: DataTablePaginationProps<TData>) {
     const currentPage = table.getState().pagination.pageIndex + 1
     const totalPages = table.getPageCount()
@@ -57,17 +61,39 @@ import {
               </SelectContent>
             </Select>
           </div>
-          {/* Mobile page info */}
-          <div className='flex items-center text-sm font-medium sm:hidden'>
-            Page {currentPage} of {totalPages}
+          {/* Row count and mobile page info */}
+          <div className='flex items-center gap-2 text-sm sm:hidden'>
+            {filteredRowCount !== undefined && totalRowCount !== undefined && (
+              <span className='text-muted-foreground'>
+                {filteredRowCount === totalRowCount ? (
+                  <>{totalRowCount} {totalRowCount === 1 ? 'item' : 'items'}</>
+                ) : (
+                  <>{filteredRowCount} of {totalRowCount} {totalRowCount === 1 ? 'item' : 'items'}</>
+                )}
+              </span>
+            )}
+            <span className='font-medium'>
+              Page {currentPage} of {totalPages}
+            </span>
           </div>
         </div>
 
         {/* Pagination controls */}
         <div className='flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:gap-2'>
-          {/* Desktop page info */}
-          <div className='hidden items-center text-sm font-medium sm:flex'>
-            Page {currentPage} of {totalPages}
+          {/* Desktop row count and page info */}
+          <div className='hidden items-center gap-2 text-sm sm:flex'>
+            {filteredRowCount !== undefined && totalRowCount !== undefined && (
+              <span className='text-muted-foreground'>
+                {filteredRowCount === totalRowCount ? (
+                  <>{totalRowCount} {totalRowCount === 1 ? 'item' : 'items'}</>
+                ) : (
+                  <>{filteredRowCount} of {totalRowCount} {totalRowCount === 1 ? 'item' : 'items'}</>
+                )}
+              </span>
+            )}
+            <span className='font-medium'>
+              Page {currentPage} of {totalPages}
+            </span>
           </div>
           
           {/* Navigation buttons */}

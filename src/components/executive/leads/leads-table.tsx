@@ -1,9 +1,8 @@
 "use client"
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   type ColumnFiltersState,
-  type PaginationState,
   type SortingState,
   type VisibilityState,
   flexRender,
@@ -26,48 +25,41 @@ import {
 } from '@/components/ui/table'
 import { statusOptions, sourceOptions } from './leads-columns'
 import { DataTablePagination } from '@/components/data-table/pagination'
-import { leadsColumns as columns} from './leads-columns'
+import { createLeadsColumns} from './leads-columns'
 import { DataTableToolbar } from '@/components/data-table/data-toolbar'
+import { DataTableFacetedFilter } from '@/components/data-table/faceted-filter'
+import { DataTableViewOptions } from '@/components/data-table/view-options'
 import { useLeadsStore } from '@/store/leadsStore'
 import { useAuthUserStore } from '@/store/authUserStore'
-import { AlertCircle, Home, RefreshCw, Users } from 'lucide-react'
+import { AlertCircle, Home, RefreshCw, Users, X } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { DateRangePicker } from '@/components/data-table/date-filter'
+
+interface DateRange {
+  from: Date
+  to: Date | undefined
+}
 
 
 export function LeadsTable() {
   const router = useRouter()
   const { leads, leadsLoading, hasLoaded } = useLeadsStore()
   const { authUsersLoading } = useAuthUserStore()
-  const data = leads ?? []
+  const data = useMemo(() => leads || [], [leads])
   // Local UI-only states
-  const [rowSelection, setRowSelection] = useState({})
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [sorting, setSorting] = useState<SortingState>([])
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
+    []
+  )
+  const [columnVisibility, setColumnVisibility] =
+    useState<VisibilityState>({})
+  const [globalFilter, setGlobalFilter] = useState("")
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
 
-  // Local state management for table (uncomment to use local-only state, not synced with URL)
-  const [columnFilters, onColumnFiltersChange] = useState<ColumnFiltersState>([])
-  const [pagination, onPaginationChange] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 })
-
-  // Synced with URL states (keys/defaults mirror users route search schema)
-//   const {
-//     columnFilters,
-//     onColumnFiltersChange,
-//     pagination,
-//     onPaginationChange,
-//     ensurePageInRange,
-//   } = useTableUrlState({
-//     search,
-//     navigate,
-//     pagination: { defaultPage: 1, defaultPageSize: 10 },
-//     globalFilter: { enabled: false },
-//     columnFilters: [
-//       // username per-column text filter
-//       { columnId: 'username', searchKey: 'username', type: 'string' },
-//       { columnId: 'status', searchKey: 'status', type: 'array' },
-//       { columnId: 'role', searchKey: 'role', type: 'array' },
-//     ],
-//   })
+    // Create columns (dateRange is now passed via filter value)
+  const columns = useMemo(() => createLeadsColumns(), [])
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
@@ -75,15 +67,12 @@ export function LeadsTable() {
     columns,
     state: {
       sorting,
-      pagination,
-      rowSelection,
       columnFilters,
       columnVisibility,
+      globalFilter,
     },
     enableRowSelection: true,
-    onPaginationChange,
-    onColumnFiltersChange,
-    onRowSelectionChange: setRowSelection,
+    onColumnFiltersChange: setColumnFilters,
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
     getPaginationRowModel: getPaginationRowModel(),
@@ -92,11 +81,35 @@ export function LeadsTable() {
     getSortedRowModel: getSortedRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
+    onGlobalFilterChange: setGlobalFilter,
   })
 
-//   useEffect(() => {
-//     ensurePageInRange(table.getPageCount())
-//   }, [table, ensurePageInRange])
+  // Update created_at filter when date range changes
+  useEffect(() => {
+    setColumnFilters((prevFilters) => {
+      const createdAtIndex = prevFilters.findIndex(f => f.id === 'created_at')
+      if (dateRange) {
+        if (createdAtIndex === -1) {
+          return [...prevFilters, { id: 'created_at', value: dateRange }]
+        } else {
+          // Update existing filter
+          const newFilters = [...prevFilters]
+          newFilters[createdAtIndex] = { id: 'created_at', value: dateRange }
+          return newFilters
+        }
+      } else {
+        if (createdAtIndex !== -1) {
+          return prevFilters.filter((_, i) => i !== createdAtIndex)
+        }
+        return prevFilters
+      }
+    })
+  }, [dateRange])
+
+    // Get filtered row count
+    const filteredRowCount = table.getFilteredRowModel().rows.length
+    const totalRowCount = table.getCoreRowModel().rows.length
+
 
 // Loading state - only show if we don't have data yet
 if ((leadsLoading || authUsersLoading) && !leads) {
@@ -229,23 +242,73 @@ if (hasLoaded && data.length === 0) {
         'flex flex-1 flex-col gap-4'
       )}
     >
-      <DataTableToolbar
-        table={table}
-        searchPlaceholder='Filter leads...'
-        searchKey='contact_name'
-        filters={[
-          {
-            columnId: 'status',
-            title: 'Status',
-            options: statusOptions.map((status) => ({ ...status })),
-          },
-          {
-            columnId: 'source',
-            title: 'Source',
-            options: sourceOptions.map((source) => ({ ...source })),
-          },
-        ]}
-      />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          {/* Left side: Date filter, search, and filters */}
+          <div className="flex flex-1 flex-col-reverse items-start gap-y-2 sm:flex-row sm:items-center sm:gap-x-2 min-w-0">
+            <DateRangePicker
+              initialDateFrom={dateRange?.from}
+              initialDateTo={dateRange?.to}
+              onUpdate={(values) => {
+                setDateRange(values.range)
+              }}
+              showCompare={false}
+            />
+            <Input
+              name='search'
+              placeholder='Filter leads...'
+              value={
+                (table.getColumn('contact_name')?.getFilterValue() as string) ?? ''
+              }
+              onChange={(event) =>
+                table.getColumn('contact_name')?.setFilterValue(event.target.value)
+              }
+              className='h-8 w-[150px] lg:w-[250px]'
+            />
+            <div className='flex gap-x-2 flex-wrap'>
+              <DataTableFacetedFilter
+                column={table.getColumn('status')}
+                title='Status'
+                options={statusOptions.map((status) => ({ ...status }))}
+              />
+              <DataTableFacetedFilter
+                column={table.getColumn('source')}
+                title='Source'
+                options={sourceOptions.map((source) => ({ ...source }))}
+              />
+            </div>
+            {(table.getState().columnFilters.length > 0 || table.getState().globalFilter) && (
+              <Button
+                variant='ghost'
+                onClick={() => {
+                  table.resetColumnFilters()
+                  table.setGlobalFilter('')
+                  setDateRange(undefined)
+                }}
+                className='h-8 px-2 lg:px-3'
+              >
+                Reset Filters
+                <X className='ms-2 h-4 w-4' />
+              </Button>
+            )}
+          </div>
+          
+          {/* Right side: View options */}
+          <div className="flex items-center gap-2 shrink-0">
+            {table.getState().sorting.length > 0 && (
+              <Button
+                variant='ghost'
+                onClick={() => {
+                  table.resetSorting()
+                }}
+                className='h-8 px-2 lg:px-3'
+              >
+                Reset Sorting
+                <X className='ms-2 h-4 w-4' />
+              </Button>
+            )}
+            <DataTableViewOptions table={table} />
+          </div>
+        </div>
       <div className='overflow-hidden rounded-md border'>
         <Table>
           <TableHeader>
@@ -322,7 +385,12 @@ if (hasLoaded && data.length === 0) {
           </TableBody>
         </Table>
       </div>
-      <DataTablePagination table={table} className='mt-auto' />
+      <DataTablePagination 
+        table={table} 
+        className='mt-auto'
+        filteredRowCount={filteredRowCount}
+        totalRowCount={totalRowCount}
+      />
     </div>
   )
 }

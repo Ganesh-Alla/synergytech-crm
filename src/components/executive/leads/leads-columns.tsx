@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 import type{  Lead } from './schema'
 import type{  LeadStatus } from './schema'
 import { DataTableRowActions } from './data-table-row-actions'
-import { format } from 'date-fns'
+import { Calendar } from 'lucide-react'
 
 export const statusColors = new Map<LeadStatus, string>([
   ['new', 'bg-blue-100/30 text-blue-900 dark:text-blue-200 border-blue-200'],
@@ -31,7 +31,31 @@ export const sourceOptions = [
   { label: 'WhatsApp', value: 'whatsapp' },
 ] as const
 
-export const leadsColumns: ColumnDef<Lead>[] = [
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString)
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const formatFollowUpDate = (dateString: string): string => {
+  const date = new Date(dateString)
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
+}
+interface DateRange {
+  from: Date
+  to: Date | undefined
+}
+
+export const createLeadsColumns = (): ColumnDef<Lead>[] => [
   {
     id: 'contact_name',
     header: ({ column }) => (
@@ -132,11 +156,56 @@ export const leadsColumns: ColumnDef<Lead>[] = [
       if (!followUp) return <div className='text-muted-foreground'>-</div>
       return (
         <div className='text-sm'>
-          {format(new Date(followUp), 'MMM dd, yyyy')}
+          {formatFollowUpDate(followUp)}
         </div>
       )
     },
-  },{
+  },
+  {
+    accessorKey: "created_at",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Created At" />
+    ),
+    cell: ({ row }) => {
+      const createdAt = row.getValue("created_at") as string
+      return (
+        <div className="flex items-center space-x-1 w-full">
+          <Calendar className="w-3 h-3 text-muted-foreground shrink-0" />
+          <span className="text-sm">
+            {formatDate(createdAt)}
+          </span>
+        </div>
+      )
+    },
+    filterFn: (row, id, value) => {
+      // Validate that value is a DateRange object
+      if (!value || typeof value !== 'object' || !('from' in value)) {
+        return true
+      }
+      const dateRange = value as DateRange
+      if (!dateRange.from || !(dateRange.from instanceof Date)) {
+        return true
+      }
+      
+      const createdAt = row.getValue(id) as string
+      if (!createdAt) return false
+      
+      const traceDate = new Date(createdAt)
+      if (Number.isNaN(traceDate.getTime())) return false
+      
+      const fromDate = new Date(dateRange.from)
+      fromDate.setHours(0, 0, 0, 0)
+      
+      const toDate = dateRange.to ? new Date(dateRange.to) : new Date()
+      toDate.setHours(23, 59, 59, 999)
+      
+      return traceDate >= fromDate && traceDate <= toDate
+    },
+    size: 180,
+    minSize: 150,
+    maxSize: 220,
+  },
+  {
     accessorKey: 'notes',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Notes' />

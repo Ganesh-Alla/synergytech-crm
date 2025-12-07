@@ -56,7 +56,7 @@ const formSchema = z
       .optional(),
     follow_up_at: z
       .union([
-        z.iso.datetime(),
+        z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format. Use YYYY-MM-DD.'),
         z.literal('').transform(() => null),
         z.null(),
         z.undefined(),
@@ -71,6 +71,23 @@ type LeadActionDialogProps = {
   currentRow?: Lead
   open: boolean
   onOpenChange: (open: boolean) => void
+}
+
+// Helper function to format date for date input (YYYY-MM-DD)
+const formatDateForInput = (dateValue: string | null | undefined): string => {
+  if (!dateValue) return ''
+  // If already in YYYY-MM-DD format, return as is
+  if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+    return dateValue
+  }
+  // Try to parse and format
+  try {
+    const date = new Date(dateValue)
+    if (Number.isNaN(date.getTime())) return ''
+    return date.toISOString().split('T')[0]
+  } catch {
+    return ''
+  }
 }
 
 export function LeadsActionDialog({
@@ -109,7 +126,7 @@ export function LeadsActionDialog({
           source: currentRow.source as LeadForm['source'],
           status: currentRow.status as LeadForm['status'],
           assigned_to: currentRow.assigned_to || undefined,
-          follow_up_at: currentRow.follow_up_at || '',
+          follow_up_at: formatDateForInput(currentRow.follow_up_at),
           notes: currentRow.notes || '',
           isEdit,
         }
@@ -138,7 +155,7 @@ export function LeadsActionDialog({
           source: currentRow.source as LeadForm['source'],
           status: currentRow.status as LeadForm['status'],
           assigned_to: currentRow.assigned_to || undefined,
-          follow_up_at: currentRow.follow_up_at || '',
+          follow_up_at: formatDateForInput(currentRow.follow_up_at),
           notes: currentRow.notes || '',
           isEdit,
         })
@@ -397,13 +414,13 @@ export function LeadsActionDialog({
                     <FormLabel className='col-span-2 text-end'>Follow Up At</FormLabel>
                     <FormControl>
                       <Input
-                        type='datetime-local'
+                        type='date'
                         className='col-span-4'
                         {...field}
-                        value={field.value ? new Date(field.value).toISOString().slice(0, 16) : ''}
+                        value={field.value ? (typeof field.value === 'string' ? field.value : new Date(field.value).toISOString().split('T')[0]) : ''}
                         onChange={(e) => {
                           const value = e.target.value
-                          field.onChange(value ? new Date(value).toISOString() : null)
+                          field.onChange(value || null)
                         }}
                       />
                     </FormControl>
@@ -433,6 +450,9 @@ export function LeadsActionDialog({
           </Form>
         </div>
         <DialogFooter>
+          <Button type='button' variant='outline' onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
           <Button type='submit' form='lead-form' disabled={isSubmitting}>
             {isSubmitting ? 'Saving...' : 'Save changes'}
           </Button>
