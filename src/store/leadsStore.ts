@@ -11,11 +11,10 @@ export type { Lead }
 interface LeadsStore {
   leads: Lead[] | null
   leadsLoading: boolean
-  refreshing: boolean
   hasLoaded: boolean
 
   setLeads: (v: Lead[] | null) => void
-  loadLeads: () => Promise<void>
+  loadLeads: (force?: boolean) => Promise<void>
   addLead: (lead: Lead) => Promise<void>
   updateLead: (lead: Lead) => Promise<void>
   deleteLead: (leadId: string) => Promise<void>
@@ -24,25 +23,32 @@ interface LeadsStore {
 export const useLeadsStore = create<LeadsStore>((set, get) => ({
   leads: null,
   leadsLoading: false,
-  refreshing: false,
   hasLoaded: false,
 
   setLeads: (leads) => set({ leads: leads }),
 
-  loadLeads: async () => {
-    // Prevent multiple simultaneous calls
-    if (get().leadsLoading) return
-    // If we already have data and it's loaded, don't fetch again
-    if (get().leads && get().hasLoaded) return
- 
-    // Only show loading if we don't have data yet
-    const currentLeads = get().leads
-    const hasData = currentLeads && currentLeads.length > 0
-    if (!hasData) {
+  loadLeads: async (force: boolean = false) => {
+    // If forcing, always fetch regardless of current state (data, hasLoaded, or loading)
+    if (force) {
       set({ leadsLoading: true })
+    } else {
+      // Prevent multiple simultaneous calls
+      if (get().leadsLoading) return
+      // If we already have data and it's loaded, don't fetch again
+      if (get().leads && get().hasLoaded) return
+      // Only show loading if we don't have data yet (to avoid flickering)
+      const currentLeads = get().leads
+      const hasData = currentLeads && currentLeads.length > 0
+      if (!hasData) {
+        set({ leadsLoading: true })
+      }
     }
     try {
-      const leads = await fetch('/api/leads').then(res => res.json())
+      // Add cache-busting parameter when forcing
+      const url = force 
+        ? `/api/leads?t=${Date.now()}` 
+        : '/api/leads'
+      const leads = await fetch(url).then(res => res.json())
       const leadsData = leads.map((lead: Lead) => ({
         ...lead,
         assigned_to_name: useAuthUserStore.getState().authUsers?.find(user => user.id === lead.assigned_to)?.full_name ?? null,

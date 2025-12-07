@@ -15,10 +15,12 @@ import { useLeadsDialog } from '@/store/useLeadsDialog'
 
 type DataTableRowActionsProps = {
   row: Row<Lead>
+  permission?: string
 }
 
-export function DataTableRowActions({ row }: DataTableRowActionsProps) {
+export function DataTableRowActions({ row, permission }: DataTableRowActionsProps) {
   const { setOpenDialog, setCurrentRow } = useLeadsDialog()
+  const canDelete = permission === 'full_access'
 
   return (
       <DropdownMenu modal={false}>
@@ -50,6 +52,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
               setOpenDialog('DeleteLead')
             }}
             className='text-red-500!'
+            disabled={!canDelete}
           >
             Delete
             <DropdownMenuShortcut>

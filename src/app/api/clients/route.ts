@@ -192,8 +192,9 @@ export async function PUT(request: Request) {
             );
         }
 
-        // Prepare update data (don't update client_code)
+        // Prepare update data
         const updateData = {
+            client_code: client.client_code || '',
             company_name: client.company_name ?? null,
             contact_name: client.contact_name,
             contact_email: client.contact_email,

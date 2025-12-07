@@ -1,11 +1,12 @@
 "use client"
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   type ColumnFiltersState,
   type PaginationState,
   type SortingState,
   type VisibilityState,
+  type Row,
   flexRender,
   getCoreRowModel,
   getFacetedRowModel,
@@ -25,26 +26,73 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { DataTablePagination } from '@/components/data-table/pagination'
-import { clientsColumns as columns} from './clients-columns'
-import { DataTableToolbar } from '@/components/data-table/data-toolbar'
+import { createClientsColumns } from './clients-columns'
+import { useUserStore } from '@/store/userStore'
+import { DataTableFacetedFilter } from '@/components/data-table/faceted-filter'
+import { DataTableViewOptions } from '@/components/data-table/view-options'
 import { useClientsStore } from '@/store/clientsStore'
-import { AlertCircle, Home, RefreshCw, Building2 } from 'lucide-react'
+import { AlertCircle, Home, RefreshCw, X } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { DateRangePicker } from '@/components/data-table/date-filter'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet'
+import { Badge } from '@/components/ui/badge'
+import type { Client } from './schema'
+import { industryOptions } from './clients-columns'
+import { Calendar, Mail, Phone, User, Building2, FileText, Globe, Briefcase } from 'lucide-react'
+
+interface DateRange {
+  from: Date
+  to: Date | undefined
+}
 
 
 export function ClientsTable() {
   const router = useRouter()
   const { clients, clientsLoading, hasLoaded } = useClientsStore()
-  const data = clients ?? []
+  const { user } = useUserStore()
+  const data = useMemo(() => clients ?? [], [clients])
+  const columns = useMemo(() => createClientsColumns(user?.permission), [user?.permission])
   // Local UI-only states
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [sorting, setSorting] = useState<SortingState>([])
-
-  // Local state management for table (uncomment to use local-only state, not synced with URL)
-  const [columnFilters, onColumnFiltersChange] = useState<ColumnFiltersState>([])
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [globalFilter, setGlobalFilter] = useState("")
+  const [searchField, setSearchField] = useState<keyof Client>("contact_name")
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null)
+  const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [pagination, onPaginationChange] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 })
+
+  // Custom global filter function to search by selected field
+  const globalFilterFn = (row: Row<Client>, _columnId: string, filterValue: string) => {
+    if (!filterValue) return true
+    
+    const searchValue = filterValue.toLowerCase().trim()
+    const client = row.original
+    const fieldValue = client[searchField]
+    
+    // Handle null/undefined values
+    if (!fieldValue) return false
+    
+    // Convert to string and search
+    return String(fieldValue).toLowerCase().includes(searchValue)
+  }
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
@@ -56,13 +104,16 @@ export function ClientsTable() {
       rowSelection,
       columnFilters,
       columnVisibility,
+      globalFilter,
     },
     enableRowSelection: true,
     onPaginationChange,
-    onColumnFiltersChange,
+    onColumnFiltersChange: setColumnFilters,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
+    onGlobalFilterChange: setGlobalFilter,
+    globalFilterFn,
     getPaginationRowModel: getPaginationRowModel(),
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -71,20 +122,113 @@ export function ClientsTable() {
     getFacetedUniqueValues: getFacetedUniqueValues(),
   })
 
+  // Update created_at filter when date range changes
+  useEffect(() => {
+    setColumnFilters((prevFilters) => {
+      const createdAtIndex = prevFilters.findIndex(f => f.id === 'created_at')
+      if (dateRange) {
+        if (createdAtIndex === -1) {
+          return [...prevFilters, { id: 'created_at', value: dateRange }]
+        } else {
+          // Update existing filter
+          const newFilters = [...prevFilters]
+          newFilters[createdAtIndex] = { id: 'created_at', value: dateRange }
+          return newFilters
+        }
+      } else {
+        if (createdAtIndex !== -1) {
+          return prevFilters.filter((_, i) => i !== createdAtIndex)
+        }
+        return prevFilters
+      }
+    })
+  }, [dateRange])
+
+  // Get filtered row count
+  const filteredRowCount = table.getFilteredRowModel().rows.length
+  const totalRowCount = table.getCoreRowModel().rows.length
+
+  // Handle row click
+  const handleRowClick = (client: Client, event: React.MouseEvent<HTMLTableRowElement>) => {
+    // Don't open sheet if clicking on buttons, dropdowns, or interactive elements
+    const target = event.target as HTMLElement
+    if (
+      target.closest('button') ||
+      target.closest('[role="menuitem"]') ||
+      target.closest('[data-radix-popper-content-wrapper]') ||
+      target.closest('a')
+    ) {
+      return
+    }
+    setSelectedClient(client)
+    setIsSheetOpen(true)
+  }
+
+  // Format date helper
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  // Format follow-up date helper
+  const formatFollowUpDate = (dateString: string): string => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  }
+
+  // Get placeholder text based on selected search field
+  const getSearchPlaceholder = () => {
+    const placeholders: Record<keyof Client, string> = {
+      id: 'Search...',
+      client_code: 'Search by client code...',
+      company_name: 'Search by company...',
+      contact_name: 'Search by contact name...',
+      contact_email: 'Search by email...',
+      contact_phone: 'Search by phone...',
+      industry: 'Search...',
+      website: 'Search...',
+      last_interaction_at: 'Search...',
+      next_follow_up_at: 'Search...',
+      notes: 'Search...',
+      created_by: 'Search...',
+      created_at: 'Search...',
+      updated_at: 'Search...',
+    }
+    return placeholders[searchField] || 'Search...'
+  }
+
 // Loading state - only show if we don't have data yet
 if (clientsLoading && !clients) {
   return (
     <div className="w-full space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex flex-1 flex-col-reverse items-start gap-y-2 sm:flex-row sm:items-center sm:space-x-2">
+      {/* Search Row Skeleton */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+        <div className="flex flex-1 items-center gap-2 min-w-0">
+          <Skeleton className="h-8 w-[140px] shrink-0" />
+          <Skeleton className="h-8 flex-1 min-w-0" />
+        </div>
+      </div>
+
+      {/* Filters Row Skeleton */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex flex-1 flex-col-reverse items-start gap-y-2 sm:flex-row sm:items-center sm:gap-x-2 min-w-0">
           <Skeleton className="h-8 w-[250px]" />
-          <div className="flex gap-x-2">
-            <Skeleton className="h-8 w-20" />
+          <div className="flex gap-x-2 flex-wrap">
             <Skeleton className="h-8 w-20" />
             <Skeleton className="h-8 w-20" />
           </div>
         </div>
-        <Skeleton className="h-8 w-20" />
+        <Skeleton className="h-8 w-20 shrink-0" />
       </div>
 
       <div className="w-full max-w-full min-w-0 rounded-md border">
@@ -142,12 +286,51 @@ if (clientsLoading && !clients) {
 if (hasLoaded && data.length === 0) {
   return (
     <div className="w-full space-y-4">
-      <DataTableToolbar
-        table={table}
-        searchPlaceholder='Filter clients...'
-        searchKey='contact_name'
-        filters={[]}
-      />
+      {/* Search Row */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+        <div className="flex flex-1 items-center gap-2 min-w-0">
+          <Select value={searchField} onValueChange={(value) => setSearchField(value as keyof Client)}>
+            <SelectTrigger className="h-8 w-[140px] shrink-0">
+              <SelectValue placeholder="Search by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="client_code">Client Code</SelectItem>
+              <SelectItem value="contact_name">Contact Name</SelectItem>
+              <SelectItem value="contact_email">Email</SelectItem>
+              <SelectItem value="company_name">Company</SelectItem>
+              <SelectItem value="contact_phone">Phone</SelectItem>
+            </SelectContent>
+          </Select>
+          <Input
+            name='search'
+            placeholder={getSearchPlaceholder()}
+            value={globalFilter ?? ''}
+            onChange={(event) => setGlobalFilter(event.target.value)}
+            className='h-8 flex-1 min-w-0'
+          />
+        </div>
+      </div>
+
+      {/* Filters Row */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex flex-1 flex-col-reverse items-start gap-y-2 sm:flex-row sm:items-center sm:gap-x-2 min-w-0">
+          <DateRangePicker
+            initialDateFrom={dateRange?.from}
+            initialDateTo={dateRange?.to}
+            onUpdate={(values) => {
+              setDateRange(values.range)
+            }}
+            showCompare={false}
+          />
+          <div className='flex gap-x-2 flex-wrap'>
+            <DataTableFacetedFilter
+              column={table.getColumn('industry')}
+              title='Industry'
+              options={industryOptions.map((industry) => ({ ...industry }))}
+            />
+          </div>
+        </div>
+      </div>
       <div className="w-full max-w-full min-w-0 rounded-md border border-dashed">
         <div className="flex flex-col items-center justify-center py-16 px-4">
           <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
@@ -190,13 +373,84 @@ if (hasLoaded && data.length === 0) {
         'flex flex-1 flex-col gap-4'
       )}
     >
-      <DataTableToolbar
-        table={table}
-        searchPlaceholder='Filter clients...'
-        searchKey='contact_name'
-        filters={[]}
-      />
-      <div className='overflow-hidden rounded-md border'>
+      {/* Search Row */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+        <div className="flex flex-1 items-center gap-2 min-w-0">
+          <Select value={searchField} onValueChange={(value) => setSearchField(value as keyof Client)}>
+            <SelectTrigger className="h-8 w-[140px] shrink-0">
+              <SelectValue placeholder="Search by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="client_code">Client Code</SelectItem>
+              <SelectItem value="contact_name">Contact Name</SelectItem>
+              <SelectItem value="contact_email">Email</SelectItem>
+              <SelectItem value="company_name">Company</SelectItem>
+              <SelectItem value="contact_phone">Phone</SelectItem>
+            </SelectContent>
+          </Select>
+          <Input
+            name='search'
+            placeholder={getSearchPlaceholder()}
+            value={globalFilter ?? ''}
+            onChange={(event) => setGlobalFilter(event.target.value)}
+            className='h-8 flex-1 min-w-0'
+          />
+        </div>
+      </div>
+
+      {/* Filters Row */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        {/* Left side: Date filter and filters */}
+        <div className="flex flex-1 flex-col-reverse items-start gap-y-2 sm:flex-row sm:items-center sm:gap-x-2 min-w-0">
+          <DateRangePicker
+            initialDateFrom={dateRange?.from}
+            initialDateTo={dateRange?.to}
+            onUpdate={(values) => {
+              setDateRange(values.range)
+            }}
+            showCompare={false}
+          />
+          <div className='flex gap-x-2 flex-wrap'>
+            <DataTableFacetedFilter
+              column={table.getColumn('industry')}
+              title='Industry'
+              options={industryOptions.map((industry) => ({ ...industry }))}
+            />
+          </div>
+          {(table.getState().columnFilters.length > 0 || table.getState().globalFilter) && (
+            <Button
+              variant='ghost'
+              onClick={() => {
+                table.resetColumnFilters()
+                table.setGlobalFilter('')
+                setDateRange(undefined)
+              }}
+              className='h-8 px-2 lg:px-3'
+            >
+              Reset Filters
+              <X className='ms-2 h-4 w-4' />
+            </Button>
+          )}
+        </div>
+        
+        {/* Right side: View options */}
+        <div className="flex items-center gap-2 shrink-0">
+          {table.getState().sorting.length > 0 && (
+            <Button
+              variant='ghost'
+              onClick={() => {
+                table.resetSorting()
+              }}
+              className='h-8 px-2 lg:px-3'
+            >
+              Reset Sorting
+              <X className='ms-2 h-4 w-4' />
+            </Button>
+          )}
+          <DataTableViewOptions table={table} />
+        </div>
+      </div>
+      <div className='overflow-hidden rounded-md border h-full'>
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -228,7 +482,8 @@ if (hasLoaded && data.length === 0) {
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
-                  className='group/row'
+                  className='group/row cursor-pointer hover:bg-muted/50 transition-colors'
+                  onClick={(e) => handleRowClick(row.original, e)}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
@@ -268,7 +523,210 @@ if (hasLoaded && data.length === 0) {
           </TableBody>
         </Table>
       </div>
-      <DataTablePagination table={table} className='mt-auto' />
+      <DataTablePagination 
+        table={table} 
+        className='mt-auto'
+        filteredRowCount={filteredRowCount}
+        totalRowCount={totalRowCount}
+      />
+
+      {/* Client Details Sheet */}
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-3xl border-l px-4 sm:px-6 lg:px-8 flex flex-col h-full"
+        >
+          {selectedClient && (
+            <>
+              {/* Header */}
+              <SheetHeader className="border-b pb-5 mb-6 shrink-0">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <SheetTitle className="text-2xl sm:text-3xl font-bold mb-1">
+                      Client Report
+                    </SheetTitle>
+                    <SheetDescription className="text-sm sm:text-base">
+                      Comprehensive details and information
+                    </SheetDescription>
+                    <div className="flex items-center gap-2 mt-2 text-xs sm:text-sm text-muted-foreground">
+                      <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <span>Created: {formatDate(selectedClient.created_at)}</span>
+                    </div>
+                  </div>
+
+                  {selectedClient.industry && (
+                    <Badge
+                      variant="outline"
+                      className="capitalize text-xs sm:text-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-full"
+                    >
+                      {selectedClient.industry}
+                    </Badge>
+                  )}
+                </div>
+              </SheetHeader>
+
+              <div className="flex-1 overflow-y-auto space-y-8 pb-6">
+                {/* Contact Information Section */}
+                <section>
+                  <div className="flex items-center gap-2 mb-3 pb-2 border-b">
+                    <User className="h-5 w-5 text-primary" />
+                    <h2 className="text-lg sm:text-xl font-semibold">
+                      Contact Information
+                    </h2>
+                  </div>
+
+                  <div className="pl-0 sm:pl-1">
+                    <div className="grid gap-1 sm:gap-2">
+                      <InfoRow icon={User} label="Name:">
+                        {selectedClient.contact_name}
+                      </InfoRow>
+
+                      <InfoRow icon={Mail} label="Email:">
+                        <a
+                          href={`mailto:${selectedClient.contact_email}`}
+                          className="text-primary hover:underline font-medium wrap-break-word"
+                        >
+                          {selectedClient.contact_email}
+                        </a>
+                      </InfoRow>
+
+                      <InfoRow icon={Phone} label="Phone:">
+                        {selectedClient.contact_phone ? (
+                          <a
+                            href={`tel:${selectedClient.contact_phone}`}
+                            className="text-primary hover:underline font-medium"
+                          >
+                            {selectedClient.contact_phone}
+                          </a>
+                        ) : (
+                          <span className="text-base text-muted-foreground italic font-normal">
+                            Not provided
+                          </span>
+                        )}
+                      </InfoRow>
+
+                      <InfoRow icon={Building2} label="Client Code:">
+                        {selectedClient.client_code}
+                      </InfoRow>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Company Information Section */}
+                <section>
+                  <div className="flex items-center gap-2 mb-3 pb-2 border-b">
+                    <Building2 className="h-5 w-5 text-primary" />
+                    <h2 className="text-lg sm:text-xl font-semibold">Company Information</h2>
+                  </div>
+
+                  <div className="pl-0 sm:pl-1">
+                    <div className="grid gap-1 sm:gap-2">
+                      {selectedClient.company_name && (
+                        <InfoRow icon={Building2} label="Company Name:">
+                          {selectedClient.company_name}
+                        </InfoRow>
+                      )}
+
+                      {selectedClient.industry && (
+                        <InfoRow icon={Briefcase} label="Industry:">
+                          <Badge
+                            variant="outline"
+                            className="capitalize text-xs sm:text-sm px-2.5 py-0.5 w-fit"
+                          >
+                            {selectedClient.industry}
+                          </Badge>
+                        </InfoRow>
+                      )}
+
+                      {selectedClient.website && (
+                        <InfoRow icon={Globe} label="Website:">
+                          <a
+                            href={selectedClient.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline font-medium wrap-break-word"
+                          >
+                            {selectedClient.website}
+                          </a>
+                        </InfoRow>
+                      )}
+                    </div>
+                  </div>
+                </section>
+
+                {/* Client Details Section */}
+                <section>
+                  <div className="flex items-center gap-2 mb-3 pb-2 border-b">
+                    <Calendar className="h-5 w-5 text-primary" />
+                    <h2 className="text-lg sm:text-xl font-semibold">Client Details</h2>
+                  </div>
+
+                  <div className="pl-0 sm:pl-1">
+                    <div className="grid gap-1 sm:gap-2">
+                      {selectedClient.next_follow_up_at && (
+                        <InfoRow icon={Calendar} label="Next Follow Up:">
+                          {formatFollowUpDate(selectedClient.next_follow_up_at)}
+                        </InfoRow>
+                      )}
+
+                      {selectedClient.last_interaction_at && (
+                        <InfoRow icon={Calendar} label="Last Interaction:">
+                          {formatDate(selectedClient.last_interaction_at)}
+                        </InfoRow>
+                      )}
+                    </div>
+                  </div>
+                </section>
+
+                {/* Notes Section */}
+                <section>
+                  <div className="flex items-center gap-2 mb-3 pb-2 border-b">
+                    <FileText className="h-5 w-5 text-primary" />
+                    <h2 className="text-lg sm:text-xl font-semibold">Notes</h2>
+                  </div>
+
+                  <div className="pl-0 sm:pl-1">
+                    <div className="rounded-lg border bg-muted/40 px-3 py-3 sm:px-4 sm:py-4">
+                      {selectedClient.notes ? (
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground">
+                          {selectedClient.notes}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground italic">
+                          No notes available
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </section>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+    </div>
+  )
+}
+
+// Helper row component
+type InfoRowProps = {
+  icon: React.ElementType
+  label: string
+  children: React.ReactNode
+}
+
+function InfoRow({ icon: Icon, label, children }: InfoRowProps) {
+  return (
+    <div className="flex flex-col gap-1 py-2 sm:flex-row sm:items-center sm:gap-4">
+      <div className="flex items-center gap-2 sm:min-w-[160px]">
+        <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+        <span className="text-sm font-medium text-muted-foreground">
+          {label}
+        </span>
+      </div>
+      <div className="text-base font-medium text-foreground wrap-break-word">
+        {children}
+      </div>
     </div>
   )
 }

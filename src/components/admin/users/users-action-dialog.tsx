@@ -116,8 +116,26 @@ export function UsersActionDialog({
   
   // Check if the user is updating their own record
   const isUpdatingSelf = isEdit && currentUser && currentRow?.id === currentUser.id
-  // Check if current user is admin (not super_admin) - disable permission field
+  // Check if current user is admin (not super_admin)
   const isAdmin = currentUser?.permission === 'admin'
+  // Check if current user is super_admin
+  const isSuperAdmin = currentUser?.permission === 'super_admin'
+  // Check if editing a super_admin user
+  const isEditingSuperAdmin = isEdit && currentRow?.permission === 'super_admin'
+  
+  // Determine if permission field should be disabled:
+  // - super_admin: disabled only when editing their own record
+  // - admin: disabled when editing their own record OR when editing a super_admin
+  const isPermissionDisabled = 
+    (isSuperAdmin && isUpdatingSelf) || 
+    (isAdmin && (isUpdatingSelf || isEditingSuperAdmin))
+  
+  // Filter roles based on current user permission:
+  // - admin: cannot see/edit super_admin role
+  // - super_admin: can see all roles
+  const availableRoles = isAdmin 
+    ? roles.filter(({ value }) => value !== 'super_admin')
+    : roles
   
   const form = useForm<UserForm>({
     resolver: zodResolver(formSchema),
@@ -260,8 +278,8 @@ export function UsersActionDialog({
                       onValueChange={field.onChange}
                       placeholder='Select a role'
                       className='col-span-4'
-                      disabled={isAdmin}
-                      items={roles.filter(({ value }) => value !== 'super_admin').map(({ label, value }) => ({
+                      disabled={isPermissionDisabled}
+                      items={availableRoles.map(({ label, value }) => ({
                         label,
                         value,
                       }))}

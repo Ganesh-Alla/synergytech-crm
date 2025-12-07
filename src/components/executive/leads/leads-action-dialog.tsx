@@ -30,11 +30,13 @@ import { useUserStore } from '@/store/userStore'
 import { useClientsStore } from '@/store/clientsStore'
 import { useAuthUserStore } from '@/store/authUserStore'
 import { useState, useEffect } from 'react'
+import { countryOptions, countryCodeToFlag, extractCountryCode } from '@/lib/phoneFlags'
 
 const formSchema = z
   .object({
     contact_name: z.string().min(1, 'Contact Name is required.'),
     contact_email: z.string().email('Invalid email address.'),
+    country_code: z.string().optional(),
     contact_phone: z.string().nullable().optional(),
     client_code: z
       .union([
@@ -90,6 +92,24 @@ const formatDateForInput = (dateValue: string | null | undefined): string => {
   }
 }
 
+// Helper function to extract country code and phone number from full phone string
+const parsePhoneNumber = (phone: string | null | undefined): { countryCode: string; phoneNumber: string } => {
+  if (!phone) return { countryCode: '91', phoneNumber: '' }
+  
+  const extractedCode = extractCountryCode(phone)
+  if (extractedCode) {
+    // Find the ISO code for this dial code
+    const country = countryOptions.find(c => c.dialCode === extractedCode)
+    const phoneWithoutCode = phone.replace(new RegExp(`^\\+?${extractedCode}`), '').trim()
+    return {
+      countryCode: country?.isoCode || '91',
+      phoneNumber: phoneWithoutCode
+    }
+  }
+  
+  return { countryCode: '91', phoneNumber: phone }
+}
+
 export function LeadsActionDialog({
   currentRow,
   open,
@@ -115,13 +135,16 @@ export function LeadsActionDialog({
     (user) => user.permission !== 'admin' && user.permission !== 'super_admin'
   ) || []
   
+  const parsedPhone = isEdit && currentRow ? parsePhoneNumber(currentRow.contact_phone) : { countryCode: '91', phoneNumber: '' }
+
   const form = useForm<LeadForm>({
     resolver: zodResolver(formSchema),
     defaultValues: isEdit && currentRow
       ? {
           contact_name: currentRow.contact_name,
           contact_email: currentRow.contact_email,
-          contact_phone: currentRow.contact_phone || '',
+          country_code: parsedPhone.countryCode,
+          contact_phone: parsedPhone.phoneNumber,
           client_code: currentRow.client_code || undefined,
           source: currentRow.source as LeadForm['source'],
           status: currentRow.status as LeadForm['status'],
@@ -133,6 +156,7 @@ export function LeadsActionDialog({
       : {
           contact_name: '',
           contact_email: '',
+          country_code: '91',
           contact_phone: '',
           client_code: undefined,
           source: 'website',
@@ -147,10 +171,12 @@ export function LeadsActionDialog({
   useEffect(() => {
     if (open) {
       if (isEdit && currentRow) {
+        const parsed = parsePhoneNumber(currentRow.contact_phone)
         form.reset({
           contact_name: currentRow.contact_name,
           contact_email: currentRow.contact_email,
-          contact_phone: currentRow.contact_phone || '',
+          country_code: parsed.countryCode,
+          contact_phone: parsed.phoneNumber,
           client_code: currentRow.client_code || undefined,
           source: currentRow.source as LeadForm['source'],
           status: currentRow.status as LeadForm['status'],
@@ -163,6 +189,7 @@ export function LeadsActionDialog({
         form.reset({
           contact_name: '',
           contact_email: '',
+          country_code: '91',
           contact_phone: '',
           client_code: undefined,
           source: 'website',
@@ -180,13 +207,21 @@ export function LeadsActionDialog({
     console.log('onSubmit called with values:', values)
     setIsSubmitting(true)
     try {
+      // Concatenate country code with phone number
+      let fullPhoneNumber: string | null = null
+      if (values.contact_phone) {
+        const country = countryOptions.find(c => c.isoCode === values.country_code)
+        const dialCode = country?.dialCode || '91'
+        fullPhoneNumber = `+${dialCode}${values.contact_phone.replace(/\D/g, '')}`
+      }
+
       const now = new Date().toISOString()
       const leadData: Lead = {
         id: currentRow?.id || '', // Will be generated on server if empty
         client_code: values.client_code || null,
         contact_name: values.contact_name,
         contact_email: values.contact_email,
-        contact_phone: values.contact_phone || null,
+        contact_phone: fullPhoneNumber,
         source: values.source,
         status: values.status,
         assigned_to: values.assigned_to || null,
@@ -288,24 +323,54 @@ export function LeadsActionDialog({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name='contact_phone'
-                render={({ field }) => (
-                  <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
-                    <FormLabel className='col-span-2 text-end'>Phone</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder='+1234567890'
-                        className='col-span-4'
-                        {...field}
-                        value={field.value || ''}
-                      />
-                    </FormControl>
-                    <FormMessage className='col-span-4 col-start-3' />
-                  </FormItem>
-                )}
-              />
+              <div className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
+                <FormLabel className='col-span-2 text-end'>Phone</FormLabel>
+                <div className='col-span-4 flex gap-2'>
+                  <FormField
+                    control={form.control}
+                    name='country_code'
+                    render={({ field }) => (
+                      <FormItem className='max-w-[140px]'>
+                        <FormControl>
+                          <SelectDropdown
+                            defaultValue={field.value || '91'}
+                            onValueChange={(value) => {
+                              field.onChange(value)
+                            }}
+                            placeholder='Country'
+                            className='w-full'
+                            isControlled={true}
+                            items={countryOptions.map((country) => ({
+                              label: `${countryCodeToFlag(country.isoCode)} +${country.dialCode}`,
+                              value: country.isoCode,
+                            }))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name='contact_phone'
+                    render={({ field }) => (
+                      <FormItem className='flex-1'>
+                        <FormControl>
+                          <Input
+                            placeholder='1234567890'
+                            className='flex-1'
+                            {...field}
+                            value={field.value || ''}
+                            maxLength={10}
+                            minLength={10}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
               <FormField
                 control={form.control}
                 name='client_code'

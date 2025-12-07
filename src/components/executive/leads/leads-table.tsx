@@ -5,6 +5,7 @@ import {
   type ColumnFiltersState,
   type SortingState,
   type VisibilityState,
+  type Row,
   flexRender,
   getCoreRowModel,
   getFacetedRowModel,
@@ -23,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { statusOptions, sourceOptions } from './leads-columns'
+import { statusOptions, sourceOptions, statusColors } from './leads-columns'
 import { DataTablePagination } from '@/components/data-table/pagination'
 import { createLeadsColumns} from './leads-columns'
 import { DataTableToolbar } from '@/components/data-table/data-toolbar'
@@ -31,11 +32,28 @@ import { DataTableFacetedFilter } from '@/components/data-table/faceted-filter'
 import { DataTableViewOptions } from '@/components/data-table/view-options'
 import { useLeadsStore } from '@/store/leadsStore'
 import { useAuthUserStore } from '@/store/authUserStore'
-import { AlertCircle, Home, RefreshCw, Users, X } from 'lucide-react'
+import { useUserStore } from '@/store/userStore'
+import { AlertCircle, Home, RefreshCw, Users, X, Calendar, Mail, Phone, User, Building2, Tag, FileText } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { DateRangePicker } from '@/components/data-table/date-filter'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet'
+import { Badge } from '@/components/ui/badge'
+import type { Lead, LeadStatus } from './schema'
 
 interface DateRange {
   from: Date
@@ -47,6 +65,7 @@ export function LeadsTable() {
   const router = useRouter()
   const { leads, leadsLoading, hasLoaded } = useLeadsStore()
   const { authUsersLoading } = useAuthUserStore()
+  const { user } = useUserStore()
   const data = useMemo(() => leads || [], [leads])
   // Local UI-only states
   const [sorting, setSorting] = useState<SortingState>([])
@@ -56,10 +75,28 @@ export function LeadsTable() {
   const [columnVisibility, setColumnVisibility] =
     useState<VisibilityState>({})
   const [globalFilter, setGlobalFilter] = useState("")
+  const [searchField, setSearchField] = useState<keyof Lead>("contact_name")
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
+  const [isSheetOpen, setIsSheetOpen] = useState(false)
 
     // Create columns (dateRange is now passed via filter value)
-  const columns = useMemo(() => createLeadsColumns(), [])
+  const columns = useMemo(() => createLeadsColumns(user?.permission), [user?.permission])
+
+  // Custom global filter function to search by selected field
+  const globalFilterFn = (row: Row<Lead>, _columnId: string, filterValue: string) => {
+    if (!filterValue) return true
+    
+    const searchValue = filterValue.toLowerCase().trim()
+    const lead = row.original
+    const fieldValue = lead[searchField]
+    
+    // Handle null/undefined values
+    if (!fieldValue) return false
+    
+    // Convert to string and search
+    return String(fieldValue).toLowerCase().includes(searchValue)
+  }
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
@@ -82,6 +119,7 @@ export function LeadsTable() {
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
     onGlobalFilterChange: setGlobalFilter,
+    globalFilterFn,
   })
 
   // Update created_at filter when date range changes
@@ -110,21 +148,67 @@ export function LeadsTable() {
     const filteredRowCount = table.getFilteredRowModel().rows.length
     const totalRowCount = table.getCoreRowModel().rows.length
 
+  // Handle row click
+  const handleRowClick = (lead: Lead, event: React.MouseEvent<HTMLTableRowElement>) => {
+    // Don't open sheet if clicking on buttons, dropdowns, or interactive elements
+    const target = event.target as HTMLElement
+    if (
+      target.closest('button') ||
+      target.closest('[role="menuitem"]') ||
+      target.closest('[data-radix-popper-content-wrapper]') ||
+      target.closest('a')
+    ) {
+      return
+    }
+    setSelectedLead(lead)
+    setIsSheetOpen(true)
+  }
+
+  // Format date helper
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  // Format follow-up date helper
+  const formatFollowUpDate = (dateString: string): string => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  }
+
 
 // Loading state - only show if we don't have data yet
 if ((leadsLoading || authUsersLoading) && !leads) {
   return (
     <div className="w-full space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex flex-1 flex-col-reverse items-start gap-y-2 sm:flex-row sm:items-center sm:space-x-2">
+      {/* Search Row Skeleton */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+        <div className="flex flex-1 items-center gap-2 min-w-0">
+          <Skeleton className="h-8 w-[140px] shrink-0" />
+          <Skeleton className="h-8 flex-1 min-w-0" />
+        </div>
+      </div>
+
+      {/* Filters Row Skeleton */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex flex-1 flex-col-reverse items-start gap-y-2 sm:flex-row sm:items-center sm:gap-x-2 min-w-0">
           <Skeleton className="h-8 w-[250px]" />
-          <div className="flex gap-x-2">
-            <Skeleton className="h-8 w-20" />
+          <div className="flex gap-x-2 flex-wrap">
             <Skeleton className="h-8 w-20" />
             <Skeleton className="h-8 w-20" />
           </div>
         </div>
-        <Skeleton className="h-8 w-20" />
+        <Skeleton className="h-8 w-20 shrink-0" />
       </div>
 
       <div className="w-full max-w-full min-w-0 rounded-md border">
@@ -235,6 +319,50 @@ if (hasLoaded && data.length === 0) {
   )
 }
 
+// Helper row component (put this above your main component)
+type InfoRowProps = {
+  icon: React.ElementType
+  label: string
+  children: React.ReactNode
+}
+
+function InfoRow({ icon: Icon, label, children }: InfoRowProps) {
+  return (
+    <div className="flex flex-col gap-1 py-2 sm:flex-row sm:items-center sm:gap-4">
+      <div className="flex items-center gap-2 sm:min-w-[160px]">
+        <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+        <span className="text-sm font-medium text-muted-foreground">
+          {label}
+        </span>
+      </div>
+      <div className="text-base font-medium text-foreground wrap-break-word">
+        {children}
+      </div>
+    </div>
+  )
+}
+
+  // Get placeholder text based on selected search field
+  const getSearchPlaceholder = () => {
+    const placeholders: Record<keyof Lead, string> = {
+      contact_name: 'Search by contact name...',
+      contact_email: 'Search by email...',
+      contact_phone: 'Search by phone number...',
+      client_code: 'Search by client code...',
+      assigned_to_name: 'Search by assigned to...',
+      id: 'Search...',
+      source: 'Search...',
+      status: 'Search...',
+      assigned_to: 'Search...',
+      follow_up_at: 'Search...',
+      notes: 'Search...',
+      created_by: 'Search...',
+      created_at: 'Search...',
+      updated_at: 'Search...',
+    }
+    return placeholders[searchField] || 'Search...'
+  }
+
   return (
     <div
       className={cn(
@@ -242,8 +370,34 @@ if (hasLoaded && data.length === 0) {
         'flex flex-1 flex-col gap-4'
       )}
     >
+        {/* Search Row */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+          <div className="flex flex-1 items-center gap-2 min-w-0">
+            <Select value={searchField} onValueChange={(value) => setSearchField(value as keyof Lead)}>
+              <SelectTrigger className="h-8 w-[140px] shrink-0">
+                <SelectValue placeholder="Search by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="contact_name">Contact Name</SelectItem>
+                <SelectItem value="contact_email">Email</SelectItem>
+                <SelectItem value="contact_phone">Phone</SelectItem>
+                <SelectItem value="client_code">Client Code</SelectItem>
+                <SelectItem value="assigned_to_name">Assigned To</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input
+              name='search'
+              placeholder={getSearchPlaceholder()}
+              value={globalFilter ?? ''}
+              onChange={(event) => setGlobalFilter(event.target.value)}
+              className='h-8 flex-1 min-w-0'
+            />
+          </div>
+        </div>
+
+        {/* Filters Row */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          {/* Left side: Date filter, search, and filters */}
+          {/* Left side: Date filter and filters */}
           <div className="flex flex-1 flex-col-reverse items-start gap-y-2 sm:flex-row sm:items-center sm:gap-x-2 min-w-0">
             <DateRangePicker
               initialDateFrom={dateRange?.from}
@@ -252,17 +406,6 @@ if (hasLoaded && data.length === 0) {
                 setDateRange(values.range)
               }}
               showCompare={false}
-            />
-            <Input
-              name='search'
-              placeholder='Filter leads...'
-              value={
-                (table.getColumn('contact_name')?.getFilterValue() as string) ?? ''
-              }
-              onChange={(event) =>
-                table.getColumn('contact_name')?.setFilterValue(event.target.value)
-              }
-              className='h-8 w-[150px] lg:w-[250px]'
             />
             <div className='flex gap-x-2 flex-wrap'>
               <DataTableFacetedFilter
@@ -309,7 +452,7 @@ if (hasLoaded && data.length === 0) {
             <DataTableViewOptions table={table} />
           </div>
         </div>
-      <div className='overflow-hidden rounded-md border'>
+      <div className='overflow-hidden rounded-md border h-full'>
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -343,7 +486,8 @@ if (hasLoaded && data.length === 0) {
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
-                  className='group/row'
+                  className='group/row cursor-pointer hover:bg-muted/50 transition-colors'
+                  onClick={(e) => handleRowClick(row.original, e)}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
@@ -391,6 +535,152 @@ if (hasLoaded && data.length === 0) {
         filteredRowCount={filteredRowCount}
         totalRowCount={totalRowCount}
       />
+
+      {/* Lead Details Sheet */}
+<Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+  <SheetContent
+    side="right"
+    className="w-full sm:max-w-3xl border-l px-4 sm:px-6 lg:px-8 flex flex-col h-full"
+  >
+    {selectedLead && (
+      <>
+        {/* Header */}
+        <SheetHeader className="border-b pb-5 mb-6 shrink-0">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <SheetTitle className="text-2xl sm:text-3xl font-bold mb-1">
+                Lead Report
+              </SheetTitle>
+              <SheetDescription className="text-sm sm:text-base">
+                Comprehensive details and information
+              </SheetDescription>
+              <div className="flex items-center gap-2 mt-2 text-xs sm:text-sm text-muted-foreground">
+                <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span>Created: {formatDate(selectedLead.created_at)}</span>
+              </div>
+            </div>
+
+            <Badge
+              variant="outline"
+              className={cn(
+                "capitalize text-xs sm:text-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-full",
+                statusColors.get(selectedLead.status as LeadStatus)
+              )}
+            >
+              {selectedLead.status.replace("_", " ")}
+            </Badge>
+          </div>
+        </SheetHeader>
+
+        <div className="flex-1 overflow-y-auto space-y-8 pb-6">
+          {/* Contact Information Section */}
+          <section>
+            <div className="flex items-center gap-2 mb-3 pb-2 border-b">
+              <User className="h-5 w-5 text-primary" />
+              <h2 className="text-lg sm:text-xl font-semibold">
+                Contact Information
+              </h2>
+            </div>
+
+            <div className="pl-0 sm:pl-1">
+              <div className="grid gap-1 sm:gap-2">
+                <InfoRow icon={User} label="Name:">
+                  {selectedLead.contact_name}
+                </InfoRow>
+
+                <InfoRow icon={Mail} label="Email:">
+                  <a
+                    href={`mailto:${selectedLead.contact_email}`}
+                    className="text-primary hover:underline font-medium wrap-break-word"
+                  >
+                    {selectedLead.contact_email}
+                  </a>
+                </InfoRow>
+
+                <InfoRow icon={Phone} label="Phone:">
+                  {selectedLead.contact_phone ? (
+                    <a
+                      href={`tel:${selectedLead.contact_phone}`}
+                      className="text-primary hover:underline font-medium"
+                    >
+                      {selectedLead.contact_phone}
+                    </a>
+                  ) : (
+                    <span className="text-base text-muted-foreground italic font-normal">
+                      Not provided
+                    </span>
+                  )}
+                </InfoRow>
+
+                {selectedLead.client_code && (
+                  <InfoRow icon={Building2} label="Client Code:">
+                    {selectedLead.client_code}
+                  </InfoRow>
+                )}
+              </div>
+            </div>
+          </section>
+
+          {/* Lead Details Section */}
+          <section>
+            <div className="flex items-center gap-2 mb-3 pb-2 border-b">
+              <Tag className="h-5 w-5 text-primary" />
+              <h2 className="text-lg sm:text-xl font-semibold">Lead Details</h2>
+            </div>
+
+            <div className="pl-0 sm:pl-1">
+              <div className="grid gap-1 sm:gap-2">
+                <InfoRow icon={Tag} label="Source:">
+                  <Badge
+                    variant="outline"
+                    className="capitalize text-xs sm:text-sm px-2.5 py-0.5 w-fit"
+                  >
+                    {selectedLead.source}
+                  </Badge>
+                </InfoRow>
+
+                {selectedLead.assigned_to_name && (
+                  <InfoRow icon={User} label="Assigned To:">
+                    {selectedLead.assigned_to_name}
+                  </InfoRow>
+                )}
+
+                {selectedLead.follow_up_at && (
+                  <InfoRow icon={Calendar} label="Follow Up Date:">
+                    {formatFollowUpDate(selectedLead.follow_up_at)}
+                  </InfoRow>
+                )}
+              </div>
+            </div>
+          </section>
+
+          {/* Notes Section */}
+          <section>
+            <div className="flex items-center gap-2 mb-3 pb-2 border-b">
+              <FileText className="h-5 w-5 text-primary" />
+              <h2 className="text-lg sm:text-xl font-semibold">Notes</h2>
+            </div>
+
+            <div className="pl-0 sm:pl-1">
+              <div className="rounded-lg border bg-muted/40 px-3 py-3 sm:px-4 sm:py-4">
+                {selectedLead.notes ? (
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground">
+                    {selectedLead.notes}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">
+                    No notes available
+                  </p>
+                )}
+              </div>
+            </div>
+          </section>
+        </div>
+      </>
+    )}
+  </SheetContent>
+</Sheet>
+
     </div>
   )
 }

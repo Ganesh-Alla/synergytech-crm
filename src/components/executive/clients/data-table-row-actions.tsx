@@ -15,10 +15,12 @@ import { useClientsDialog } from '@/store/useClientsDialog'
 
 type DataTableRowActionsProps = {
   row: Row<Client>
+  permission?: string
 }
 
-export function DataTableRowActions({ row }: DataTableRowActionsProps) {
+export function DataTableRowActions({ row, permission }: DataTableRowActionsProps) {
   const { setOpenDialog, setCurrentRow } = useClientsDialog()
+  const canDelete = permission === 'full_access'
 
   return (
       <DropdownMenu modal={false}>
@@ -50,6 +52,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
               setOpenDialog('DeleteClient')
             }}
             className='text-red-500!'
+            disabled={!canDelete}
           >
             Delete
             <DropdownMenuShortcut>

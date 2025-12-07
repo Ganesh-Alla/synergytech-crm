@@ -55,7 +55,8 @@ interface DateRange {
   to: Date | undefined
 }
 
-export const createLeadsColumns = (): ColumnDef<Lead>[] => [
+export const createLeadsColumns = (permission?: string): ColumnDef<Lead>[] => {
+  const columns: ColumnDef<Lead>[] = [
   {
     id: 'contact_name',
     header: ({ column }) => (
@@ -65,7 +66,7 @@ export const createLeadsColumns = (): ColumnDef<Lead>[] => [
       const { contact_name } = row.original
       return <LongText className='max-w-36'>{contact_name}</LongText>
     },
-    meta: { className: 'w-36' },
+    meta: { className: 'w-24' },
   },
   {
     accessorKey: 'contact_email',
@@ -83,7 +84,14 @@ export const createLeadsColumns = (): ColumnDef<Lead>[] => [
     ),
     cell: ({ row }) => {
       const phone = row.getValue('contact_phone') as string | null
-      return <div className='w-fit ps-2 text-nowrap'>{phone || '-'}</div>
+      if (!phone) return <div className='w-fit ps-2 text-nowrap'>-</div>
+      
+      
+      return (
+        <div className='w-fit ps-2 text-nowrap flex items-center gap-1.5'>
+          <span>{phone}</span>
+        </div>
+      )
     },
   },
   {
@@ -205,18 +213,15 @@ export const createLeadsColumns = (): ColumnDef<Lead>[] => [
     minSize: 150,
     maxSize: 220,
   },
-  {
-    accessorKey: 'notes',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Notes' />
-    ),
-    cell: ({ row }) => {
-      const notes = row.getValue('notes') as string | null
-      return <LongText className='max-w-36'>{notes || '-'}</LongText>
-    },
-  },
-  {
-    id: 'actions',
-    cell: ({ row }) => <DataTableRowActions row={row} />,
-  },
-]
+  ]
+
+  // Only add actions column if permission is not 'read'
+  if (permission !== 'read') {
+    columns.push({
+      id: 'actions',
+      cell: ({ row }) => <DataTableRowActions row={row} permission={permission} />,
+    })
+  }
+
+  return columns
+}

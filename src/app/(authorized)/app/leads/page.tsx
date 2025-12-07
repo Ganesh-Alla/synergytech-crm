@@ -1,13 +1,15 @@
 "use client"
-import { UserPlus } from "lucide-react"
+import { RefreshCw, UserPlus } from "lucide-react"
 import { Main } from "@/components/dashboard/main"
 import { LeadsDialogs } from "@/components/executive/leads/leads-dialog"
 import { LeadsTable } from "@/components/executive/leads/leads-table"
 import { Button } from "@/components/ui/button"
 import { useLeadsDialog } from "@/store/useLeadsDialog"
+import { useLeadsStore } from "@/store/leadsStore"
 
 const Leads = () => {
   const { setOpenDialog } = useLeadsDialog()
+  const { loadLeads, leadsLoading } = useLeadsStore()
   return (
       <Main className='flex flex-1 flex-col gap-4 sm:gap-6'>
         <div className='flex flex-wrap items-end justify-between gap-2'>
@@ -18,6 +20,15 @@ const Leads = () => {
             </p>
           </div>
           <div className='flex gap-2'>
+            <Button 
+              variant='outline' 
+              size='icon' 
+              onClick={() => {
+                loadLeads(true).catch(console.error)
+              }}
+            >
+              <RefreshCw size={18} className={leadsLoading ? "animate-spin" : ""} />
+            </Button>
             <Button className='space-x-1' onClick={() => setOpenDialog('AddLead')}>
               <span>Add Lead</span> <UserPlus size={18} />
             </Button>

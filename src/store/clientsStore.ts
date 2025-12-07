@@ -7,11 +7,10 @@ import { toast } from "sonner"
 interface ClientsStore {
   clients: Client[] | null
   clientsLoading: boolean
-  refreshing: boolean
   hasLoaded: boolean
 
   setClients: (v: Client[] | null) => void
-  loadClients: () => Promise<void>
+  loadClients: (force?: boolean) => Promise<void>
   addClient: (client: Client) => Promise<void>
   updateClient: (client: Client) => Promise<void>
   deleteClient: (clientId: string) => Promise<void>
@@ -20,25 +19,33 @@ interface ClientsStore {
 export const useClientsStore = create<ClientsStore>((set, get) => ({
   clients: null,
   clientsLoading: false,
-  refreshing: false,
   hasLoaded: false,
 
   setClients: (clients) => set({ clients: clients }),
 
-  loadClients: async () => {
-    // Prevent multiple simultaneous calls
-    if (get().clientsLoading) return
-    // If we already have data and it's loaded, don't fetch again
-    if (get().clients && get().hasLoaded) return
- 
-    // Only show loading if we don't have data yet
-    const currentClients = get().clients
-    const hasData = currentClients && currentClients.length > 0
-    if (!hasData) {
+  loadClients: async (force: boolean = false) => {
+    // If forcing, always fetch regardless of current state (data, hasLoaded, or loading)
+    if (force) {
       set({ clientsLoading: true })
+    } else {
+      // Prevent multiple simultaneous calls
+      if (get().clientsLoading) return
+      // If we already have data and it's loaded, don't fetch again
+      if (get().clients && get().hasLoaded) return
+      // Only show clientsLoading if we don't have data yet (to avoid flickering)
+      const currentClients = get().clients
+      const hasData = currentClients && currentClients.length > 0
+      if (!hasData) {
+        set({ clientsLoading: true })
+      }
     }
+    
     try {
-      const clientsData = await fetch('/api/clients').then(res => res.json())
+      // Add cache-busting parameter when forcing
+      const url = force 
+        ? `/api/clients?t=${Date.now()}` 
+        : '/api/clients'
+      const clientsData = await fetch(url).then(res => res.json())
       set({ clients: clientsData as Client[], hasLoaded: true })
     } catch (error) {
       console.error('Error loading Clients:', error)
