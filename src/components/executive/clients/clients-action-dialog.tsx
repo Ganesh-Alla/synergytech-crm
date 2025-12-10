@@ -45,6 +45,7 @@ const formSchema = z
     contact_email: z.string().email('Invalid email address.'),
     country_code: z.string().optional(),
     contact_phone: z.string().nullable().optional(),
+    contact_number: z.string().nullable().optional(),
     industry: z.union([
       z.literal('Technology'),
       z.literal('Manufacturing'),
@@ -160,7 +161,7 @@ export function ClientsActionDialog({
           contact_name: currentRow.contact_name,
           contact_email: currentRow.contact_email,
           country_code: parsedPhone.countryCode,
-          contact_phone: parsedPhone.phoneNumber,
+          contact_number: parsedPhone.phoneNumber || undefined,
           industry: currentRow.industry || '',
           website: currentRow.website || '',
           next_follow_up_at: formatDateForInput(currentRow.next_follow_up_at),
@@ -174,7 +175,7 @@ export function ClientsActionDialog({
           contact_name: '',
           contact_email: '',
           country_code: '91',
-          contact_phone: '',
+          contact_number: '',
           industry: null,
           website: '',
           next_follow_up_at: '',
@@ -194,7 +195,7 @@ export function ClientsActionDialog({
           contact_name: currentRow.contact_name,
           contact_email: currentRow.contact_email,
           country_code: parsed.countryCode,
-          contact_phone: parsed.phoneNumber,
+          contact_number: parsedPhone.phoneNumber || undefined,
           industry: currentRow.industry || '',
           website: currentRow.website || '',
           next_follow_up_at: formatDateForInput(currentRow.next_follow_up_at),
@@ -209,7 +210,7 @@ export function ClientsActionDialog({
           contact_name: '',
           contact_email: '',
           country_code: '91',
-          contact_phone: '',
+          contact_number: '',
           industry: null,
           website: '',
           next_follow_up_at: '',
@@ -219,7 +220,7 @@ export function ClientsActionDialog({
         })
       }
     }
-  }, [open, currentRow, isEdit, form])
+  }, [open, currentRow, isEdit, form, parsedPhone.phoneNumber])
 
   const onSubmit = async (values: ClientForm) => {
     console.log('onSubmit called with values:', values)
@@ -227,10 +228,10 @@ export function ClientsActionDialog({
     try {
       // Concatenate country code with phone number
       let fullPhoneNumber: string | null = null
-      if (values.contact_phone) {
+      if (values.contact_number) {
         const country = countryOptions.find(c => c.isoCode === values.country_code)
         const dialCode = country?.dialCode || '91'
-        fullPhoneNumber = `+${dialCode}${values.contact_phone.replace(/\D/g, '')}`
+        fullPhoneNumber = `+${dialCode}${values.contact_number.replace(/\D/g, '')}`
       }
 
       const now = new Date().toISOString()
@@ -393,16 +394,31 @@ export function ClientsActionDialog({
                   />
                   <FormField
                     control={form.control}
-                    name='contact_phone'
+                    name='contact_number'
                     render={({ field }) => (
                       <FormItem className='flex-1'>
                         <FormControl>
-                          <Input
-                            placeholder='1234567890'
-                            className='flex-1'
+                        <Input
+                            type="text"
+                            placeholder="1234567890"
+                            maxLength={10}
+                            inputMode="numeric"
                             {...field}
-                            value={field.value || ''}
+                            value={field.value || ""}
+                            onKeyDown={(e) => {
+                              // Block non-numeric keys except Backspace, Arrow keys, Tab
+                              if (
+                                !/[0-9]/.test(e.key) &&
+                                !["Backspace", "ArrowLeft", "ArrowRight", "Tab"].includes(e.key)
+                              ) {
+                                e.preventDefault();
+                              }
+                            }}
+                            onChange={(e) => {
+                              field.onChange(e.target.value); // Already blocked invalid keys
+                            }}
                           />
+
                         </FormControl>
                         <FormMessage />
                       </FormItem>

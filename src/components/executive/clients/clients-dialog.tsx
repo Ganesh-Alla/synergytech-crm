@@ -1,12 +1,22 @@
 import { ClientsActionDialog } from '@/components/executive/clients/clients-action-dialog'
 import { ClientsDeleteDialog } from '@/components/executive/clients/clients-delete-dialog'
-import { useClientsDialog } from '@/store/useClientsDialog'
+import { useClientsDialog } from '@/store/dialogs/useClientsDialog'
+import { RequirementsActionDialog } from '../requirements/requirements-action-dialog'
+import { useRequirementsDialog } from '@/store/dialogs/useRequirementsDialog'
 
 export function ClientsDialogs() {
   const { openDialog, setOpenDialog, currentRow, setCurrentRow } = useClientsDialog()
+  const { openDialog: openRequirementDialog, setOpenDialog: setOpenRequirementDialog, currentClientId } = useRequirementsDialog()
 
   return (
     <>
+      <RequirementsActionDialog
+        key='requirement-add'
+        currentClientId={currentClientId}
+        open={openRequirementDialog === 'AddRequirement'}
+        onOpenChange={(open: boolean) => setOpenRequirementDialog(open ? 'AddRequirement' : null)}
+      />
+
       <ClientsActionDialog
         key='client-add'
         open={openDialog === 'AddClient'}

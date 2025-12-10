@@ -4,10 +4,10 @@ import { Main } from "@/components/dashboard/main"
 import { LeadsDialogs } from "@/components/executive/leads/leads-dialog"
 import { LeadsTable } from "@/components/executive/leads/leads-table"
 import { Button } from "@/components/ui/button"
-import { useLeadsDialog } from "@/store/useLeadsDialog"
+import { useLeadsDialog } from "@/store/dialogs/useLeadsDialog"
 import { useLeadsStore } from "@/store/leadsStore"
 
-const Leads = () => {
+const LeadsPage = () => {
   const { setOpenDialog } = useLeadsDialog()
   const { loadLeads, leadsLoading } = useLeadsStore()
   return (
@@ -40,4 +40,4 @@ const Leads = () => {
   )
 }
 
-export default Leads
+export default LeadsPage

@@ -90,7 +90,7 @@ export async function POST(request: Request) {
         const now = new Date().toISOString();
         const leadData = {
             id: lead.id || randomUUID(),
-            client_code: lead.client_code || null,
+            client_id: lead.client_id || null,
             contact_name: lead.contact_name,
             contact_email: lead.contact_email,
             contact_phone: lead.contact_phone || null,
@@ -157,7 +157,7 @@ export async function PUT(request: Request) {
 
         // Prepare update data
         const updateData = {
-            client_code: lead.client_code ?? null,
+            client_id: lead.client_id ?? null,
             contact_name: lead.contact_name,
             contact_email: lead.contact_email,
             contact_phone: lead.contact_phone ?? null,

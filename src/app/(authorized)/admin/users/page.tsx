@@ -3,7 +3,7 @@ import { UserPlus } from "lucide-react"
 import { Main } from "@/components/dashboard/main"
 import { UsersTable } from "@/components/admin/users/users-table"
 import { Button } from "@/components/ui/button"
-import { useUserDialog } from "@/store/useUserDialog"
+import { useUserDialog } from "@/store/dialogs/useUserDialog"
 import { UsersDialogs } from "@/components/admin/users/users-dialog";
 
 const Users = () => {

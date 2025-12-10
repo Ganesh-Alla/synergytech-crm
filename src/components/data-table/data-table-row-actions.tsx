@@ -12,8 +12,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import type{  User } from '@/components/admin/users/schema'
 import type { Lead } from '@/components/executive/leads/schema'
-import { useUserDialog } from '@/store/useUserDialog'
-import { useLeadsDialog } from '@/store/useLeadsDialog'
+import { useUserDialog } from '@/store/dialogs/useUserDialog'
+import { useLeadsDialog } from '@/store/dialogs/useLeadsDialog'
 
 type DataTableRowActionsProps = {
   row: Row<User | Lead>

@@ -32,9 +32,9 @@ import {
     }
   
     return (
-      <div className={cn('flex items-center space-x-2', className)}>
+      <div className={cn('flex items-center ', className)}>
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          <DropdownMenuTrigger asChild className="gap-0.5 p-1">
             <Button
               variant='ghost'
               size='sm'

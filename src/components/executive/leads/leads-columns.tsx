@@ -11,15 +11,17 @@ import { Calendar } from 'lucide-react'
 export const statusColors = new Map<LeadStatus, string>([
   ['new', 'bg-blue-100/30 text-blue-900 dark:text-blue-200 border-blue-200'],
   ['in_progress', 'bg-yellow-100/30 text-yellow-900 dark:text-yellow-200 border-yellow-200'],
-  ['won', 'bg-green-100/30 text-green-900 dark:text-green-200 border-green-200'],
-  ['lost', 'bg-destructive/10 dark:bg-destructive/50 text-destructive dark:text-primary border-destructive/10'],
+  ['incompatible', 'bg-destructive/10 dark:bg-destructive/50 text-destructive dark:text-primary border-destructive/10'],
+  ['converted', 'bg-green-100/30 text-green-900 dark:text-green-200 border-green-200'],
+  ['not_serviced', 'bg-destructive/10 dark:bg-destructive/50 text-destructive dark:text-primary border-destructive/10'],
 ])
 
 export const statusOptions = [
   { label: 'New', value: 'new' },
   { label: 'In Progress', value: 'in_progress' },
-  { label: 'Won', value: 'won' },
-  { label: 'Lost', value: 'lost' },
+  { label: 'Incompatible', value: 'incompatible' },
+  { label: 'Not Serviced', value: 'not_serviced' },
+  { label: 'Converted', value: 'converted' },
 ] as const
 
 export const sourceOptions = [

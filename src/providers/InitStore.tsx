@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { initAuthUserStore, useAuthUserStore } from "@/store/authUserStore";
 import { initClientsStore } from "@/store/clientsStore";
 import { initLeadsStore } from "@/store/leadsStore";
+import { initVendorsStore } from "@/store/vendorsStore";
 import { initUserStore } from "@/store/userStore";
 
 
@@ -72,6 +73,20 @@ export function ClientsStoreInitializer() {
     if (initialized.current) return;
     initialized.current = true;
     const unsubscribe = initClientsStore();
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+  return null;
+}
+
+export function VendorsStoreInitializer() {
+  const initialized = useRef(false);
+  useEffect(() => {
+    // Prevent multiple initializations in React strict mode
+    if (initialized.current) return;
+    initialized.current = true;
+    const unsubscribe = initVendorsStore();
     return () => {
       if (unsubscribe) unsubscribe();
     };

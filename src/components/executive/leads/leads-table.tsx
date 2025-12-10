@@ -351,6 +351,7 @@ function InfoRow({ icon: Icon, label, children }: InfoRowProps) {
       client_code: 'Search by client code...',
       assigned_to_name: 'Search by assigned to...',
       id: 'Search...',
+      client_id: 'Search...',
       source: 'Search...',
       status: 'Search...',
       assigned_to: 'Search...',
@@ -549,7 +550,7 @@ function InfoRow({ icon: Icon, label, children }: InfoRowProps) {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <SheetTitle className="text-2xl sm:text-3xl font-bold mb-1">
-                Lead Report
+                Lead Details
               </SheetTitle>
               <SheetDescription className="text-sm sm:text-base">
                 Comprehensive details and information
@@ -680,7 +681,6 @@ function InfoRow({ icon: Icon, label, children }: InfoRowProps) {
     )}
   </SheetContent>
 </Sheet>
-
     </div>
   )
 }

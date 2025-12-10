@@ -20,6 +20,7 @@ const clientSchema = z.object({
   contact_name: z.string(),
   contact_email: z.string().email(),
   contact_phone: z.string().nullable(),
+  contact_number: z.string().nullable().optional(),
   industry: industrySchema.nullable(),
   website: z.string().nullable(),
   last_interaction_at: z.string().datetime().nullable(),

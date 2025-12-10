@@ -1,6 +1,6 @@
 import { LeadsActionDialog } from '@/components/executive/leads/leads-action-dialog'
 import { LeadsDeleteDialog } from '@/components/executive/leads/leads-delete-dialog'
-import { useLeadsDialog } from '@/store/useLeadsDialog'
+import { useLeadsDialog } from '@/store/dialogs/useLeadsDialog'
 
 export function LeadsDialogs() {
   const { openDialog, setOpenDialog, currentRow, setCurrentRow } = useLeadsDialog()

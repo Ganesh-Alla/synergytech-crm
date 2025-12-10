@@ -1,11 +1,16 @@
 "use client"
 
 import {
+  ArrowRightLeft,
   BarChart3,
+  Building,
   CalendarDays,
+  FileText,
   GitBranch,
   LayoutDashboard,
   Mail,
+  MessageSquareQuote,
+  Receipt,
   Users,
 } from "lucide-react"
 
@@ -19,7 +24,7 @@ import {
 } from "@/components/ui/sidebar"
 import { NavActions } from "../../dashboard/nav-actions"
 import { Separator } from "../../ui/separator"
-import Link from "next/link"
+import { Logo } from "@/components/logo"
 
 
 const data = {
@@ -43,6 +48,16 @@ const data = {
       icon: Users,
     },
     {
+      name:"Requirements",
+      url: "/app/requirements",
+      icon: FileText,
+    },
+    {
+      name:"Vendors",
+      url: "/app/vendors",
+      icon: Building,
+    },
+    {
       name:"Sales",
       url: "/app/sales",
       icon: BarChart3,
@@ -55,7 +70,22 @@ const data = {
       name:"Marketing Campaigns",
       url: "/app/marketing-campaigns",
       icon: Mail,
-    }
+    },
+    {
+      name:"Quotes",
+      url: "/app/quotes",
+      icon: MessageSquareQuote,
+    },
+    {
+      name:"Expenses",
+      url: "/app/expenses",
+      icon: Receipt,
+    },
+    {
+      name:"Transactions",
+      url: "/app/transactions",
+      icon: ArrowRightLeft,
+    },
   ],
 }
 
@@ -69,17 +99,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             size="lg"
             className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
           >
-            <Link 
-              href="/app" 
-              className="flex items-center gap-2 group-hover:text-sidebar-accent-foreground transition-colors"
-            >
-              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground font-serif text-base font-semibold transition-all duration-200">
-                S
-              </span>
-              <span className="group-data-[collapsible=icon]:hidden font-serif text-base font-semibold text-sidebar-foreground transition-all duration-200">
-                SynergyTech CRM
-              </span>
-            </Link>
+            <Logo/>
           </SidebarMenuButton>
         </SidebarMenu>
         <NavMain items={data.navMain} />

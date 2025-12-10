@@ -5,6 +5,9 @@ const leadStatusSchema = z.union([
   z.literal('in_progress'),
   z.literal('won'),
   z.literal('lost'),
+  z.literal('incompatible'),
+  z.literal('not_serviced'),
+  z.literal('converted'),
 ])
 export type LeadStatus = z.infer<typeof leadStatusSchema>
 
@@ -20,10 +23,12 @@ export type LeadSource = z.infer<typeof leadSourceSchema>
 
 const leadSchema = z.object({
   id: z.uuid(),
-  client_code: z.string().nullable().optional(),
+  client_id: z.uuid().nullable().optional(),
+  client_code: z.string().nullable().optional(), // Computed field, not from DB
   contact_name: z.string(),
   contact_email: z.email(),
   contact_phone: z.string().nullable(),
+  contact_number: z.string().nullable().optional(),
   source: leadSourceSchema,
   status: leadStatusSchema,
   assigned_to: z.uuid().nullable().optional(),

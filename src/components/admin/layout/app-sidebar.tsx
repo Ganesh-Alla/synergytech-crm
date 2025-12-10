@@ -2,30 +2,21 @@
 
 import {
   AlertTriangle,
-  BarChart3,
-  Database,
   GitBranch,
-  Globe,
-  Key,
   LayoutDashboard,
-  Package,
-  Send,
-  Settings,
-  Wrench,
 } from "lucide-react"
 
 import { NavMain } from "@/components/dashboard/nav-main"
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
 } from "@/components/ui/sidebar"
 import { NavActions } from "../../dashboard/nav-actions"
 import { Separator } from "../../ui/separator"
-import Link from "next/link"
+import { Logo } from "@/components/logo"
 
 
 const data = {
@@ -61,17 +52,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             size="lg"
             className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
           >
-            <Link 
-              href="/app" 
-              className="flex items-center gap-2 group-hover:text-sidebar-accent-foreground transition-colors"
-            >
-              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground font-serif text-base font-semibold transition-all duration-200">
-                S
-              </span>
-              <span className="group-data-[collapsible=icon]:hidden font-serif text-base font-semibold text-sidebar-foreground transition-all duration-200">
-                SynergyTech CRM
-              </span>
-            </Link>
+              <Logo/>
           </SidebarMenuButton>
         </SidebarMenu>
         <NavMain items={data.navMain} />

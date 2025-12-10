@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import type { Lead } from './schema'
-import { useLeadsDialog } from '@/store/useLeadsDialog'
+import { useLeadsDialog } from '@/store/dialogs/useLeadsDialog'
 
 type DataTableRowActionsProps = {
   row: Row<Lead>

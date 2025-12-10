@@ -1,4 +1,4 @@
-import { MoreHorizontal } from 'lucide-react'
+import { FilePlus, MoreHorizontal, Plus } from 'lucide-react'
 import type{  Row } from '@tanstack/react-table'
 import { Trash2, UserPen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -11,7 +11,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import type { Client } from './schema'
-import { useClientsDialog } from '@/store/useClientsDialog'
+import { useClientsDialog } from '@/store/dialogs/useClientsDialog'
+import { useRequirementsDialog } from '@/store/dialogs/useRequirementsDialog'
+import Link from 'next/link'
 
 type DataTableRowActionsProps = {
   row: Row<Client>
@@ -20,6 +22,7 @@ type DataTableRowActionsProps = {
 
 export function DataTableRowActions({ row, permission }: DataTableRowActionsProps) {
   const { setOpenDialog, setCurrentRow } = useClientsDialog()
+  const { setOpenDialog: setOpenRequirementDialog, setCurrentClientId, currentClientId } = useRequirementsDialog()
   const canDelete = permission === 'full_access'
 
   return (
@@ -33,7 +36,18 @@ export function DataTableRowActions({ row, permission }: DataTableRowActionsProp
             <span className='sr-only'>Open menu</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align='end' className='w-[160px]'>
+        <DropdownMenuContent align='end' className='w-full'>
+          <DropdownMenuItem
+            asChild
+          >
+            <Link className='space-x-1' href={`/app/requirements/new?clientId=${row.original.id}`}>
+              <span>Add Requirement</span> 
+            <DropdownMenuShortcut>
+              <FilePlus size={16} />
+            </DropdownMenuShortcut>
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => {
               setCurrentRow(row.original)

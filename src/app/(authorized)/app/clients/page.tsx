@@ -2,12 +2,12 @@
 import { RefreshCw, UserPlus } from "lucide-react"
 import { Main } from "@/components/dashboard/main"
 import { Button } from "@/components/ui/button"
-import { useClientsDialog } from "@/store/useClientsDialog"
+import { useClientsDialog } from "@/store/dialogs/useClientsDialog"
 import { ClientsTable } from "@/components/executive/clients/clients-table"
 import { ClientsDialogs } from "@/components/executive/clients/clients-dialog"
 import { useClientsStore } from "@/store/clientsStore"
 
-const Clients = () => {
+const ClientsPage = () => {
   const { setOpenDialog } = useClientsDialog()
   const { loadClients, clientsLoading } = useClientsStore()
   return (
@@ -40,4 +40,4 @@ const Clients = () => {
   )
 }
 
-export default Clients
+export default ClientsPage

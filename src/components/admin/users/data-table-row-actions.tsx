@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import type{  User } from '@/components/admin/users/schema'
-import { useUserDialog } from '@/store/useUserDialog'
+import { useUserDialog } from '@/store/dialogs/useUserDialog'
 
 type DataTableRowActionsProps = {
   row: Row<User>

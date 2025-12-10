@@ -195,6 +195,7 @@ export function ClientsTable() {
       contact_name: 'Search by contact name...',
       contact_email: 'Search by email...',
       contact_phone: 'Search by phone...',
+      contact_number: 'Search by number...',
       industry: 'Search...',
       website: 'Search...',
       last_interaction_at: 'Search...',

@@ -3,6 +3,7 @@
 import { create } from "zustand"
 import { toast } from "sonner"
 import { useAuthUserStore } from "./authUserStore"
+import { useClientsStore } from "./clientsStore"
 import type { Lead } from "@/components/executive/leads/schema"
 
 // Re-export Lead type for convenience
@@ -51,6 +52,7 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
       const leads = await fetch(url).then(res => res.json())
       const leadsData = leads.map((lead: Lead) => ({
         ...lead,
+        client_code: useClientsStore.getState().clients?.find(client => client.id === lead.client_id)?.client_code ?? null,
         assigned_to_name: useAuthUserStore.getState().authUsers?.find(user => user.id === lead.assigned_to)?.full_name ?? null,
       }))
       console.log('leadsData', leadsData)
@@ -81,7 +83,10 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
         toast.success("Lead added successfully", { id: toastId })
         const currentLeads = get().leads
         if (currentLeads && Array.isArray(currentLeads)) {
-          set({ leads: [{...lead, assigned_to_name: useAuthUserStore.getState().authUsers?.find(user => user.id === lead.assigned_to)?.full_name ?? null}, ...currentLeads] })
+          set({ leads: [{...lead,client_code:
+            useClientsStore.getState().clients?.find(client => client.id === lead.client_id)?.client_code ?? null,
+             assigned_to_name: useAuthUserStore.getState().authUsers?.find(user => user.id === lead.assigned_to)?.full_name ?? null}, 
+             ...currentLeads] })
         } else {
           set({ leads: [{...lead, assigned_to_name: useAuthUserStore.getState().authUsers?.find(user => user.id === lead.assigned_to)?.full_name ?? null}] })
         }
@@ -125,9 +130,15 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
               if (l.assigned_to !== lead.assigned_to) {
                 assigned_to_name = useAuthUserStore.getState().authUsers?.find(user => user.id === lead.assigned_to)?.full_name ?? null;
               }
+              // Check if client_code changed
+              let client_code = l.client_code;
+              if (l.client_id !== lead.client_id) {
+                client_code = useClientsStore.getState().clients?.find(client => client.id === lead.client_id)?.client_code ?? null;
+              }
               return {
                 ...lead,
-                assigned_to_name
+                assigned_to_name,
+                client_code
               };
             })
           })
