@@ -51,7 +51,7 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet'
 import { Badge } from '@/components/ui/badge'
-import type { Requirement } from './schema'
+import type { Requirement, RequirementItem } from './schema'
 import { requirementStatus, requirementPriority } from './requirements-columns'
 import { Calendar, Mail, Phone, User, Building2, FileText, Globe, Briefcase } from 'lucide-react'
 
@@ -75,7 +75,7 @@ export function RequirementsTable() {
   const [globalFilter, setGlobalFilter] = useState("")
   const [searchField, setSearchField] = useState<keyof Requirement>("title")
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
-  const [selectedRequirement, setSelectedRequirement] = useState<Requirement | null>(null)
+  const [selectedRequirement, setSelectedRequirement] = useState<Requirement & { items?: RequirementItem[] } | null>(null)
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [pagination, onPaginationChange] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 })
 
@@ -712,6 +712,37 @@ if (hasLoaded && data.length === 0) {
                           No description available
                         </p>
                       )}
+                    </div>
+                  </div>
+                </section>
+
+                {/* Requirement Items Section */}
+                <section>
+                  <div className="flex items-center gap-2 mb-3 pb-2 border-b">
+                    <FileText className="h-5 w-5 text-primary" />
+                    <h2 className="text-lg sm:text-xl font-semibold">Requirement Items</h2>
+                  </div>
+                  <div className="pl-0 sm:pl-1">
+                    <div className="grid gap-1 sm:gap-2">
+                      {selectedRequirement.items?.map((item) => (
+                        <div key={item.id} className="flex flex-col gap-1 py-2 sm:flex-row sm:items-center sm:gap-4">
+                          <span className="text-sm font-medium text-muted-foreground">
+                            {item.item_name}
+                          </span>
+                          <span className="text-sm font-medium text-muted-foreground">
+                            {item.item_description}
+                          </span>
+                          <span className="text-sm font-medium text-muted-foreground">
+                            {item.quantity}
+                          </span>
+                          <span className="text-sm font-medium text-muted-foreground">
+                            {item.unit_of_measure}
+                          </span>
+                          <span className="text-sm font-medium text-muted-foreground">
+                            {item.category}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </section>

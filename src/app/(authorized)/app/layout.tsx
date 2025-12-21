@@ -4,7 +4,7 @@ import { AppSidebar } from "@/components/executive/layout/app-sidebar";
 import { SiteHeader } from "@/components/dashboard/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
-import { AuthUserStoreInitializer, ClientsStoreInitializer, LeadsStoreInitializer, VendorsStoreInitializer } from "@/providers/InitStore";
+import { AuthUserStoreInitializer, ClientsStoreInitializer, LeadsStoreInitializer, RequirementsStoreInitializer, VendorsStoreInitializer } from "@/providers/InitStore";
 import { useUserStore } from "@/store/userStore"
 
 export default function NonAdminLayout({ children }: { children: React.ReactNode }) {
@@ -50,6 +50,7 @@ export default function NonAdminLayout({ children }: { children: React.ReactNode
           <ClientsStoreInitializer />
           <LeadsStoreInitializer />
           <VendorsStoreInitializer />
+          <RequirementsStoreInitializer  />
         </SidebarProvider>
     )
 }

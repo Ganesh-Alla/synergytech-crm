@@ -116,7 +116,6 @@ export async function POST(request: Request) {
         const vendorCode = vendor.vendor_code || await generateVendorCode(supabase);
 
         // Prepare vendor data
-        const now = new Date().toISOString();
         const vendorData = {
             id: vendor.id || randomUUID(),
             vendor_code: vendorCode,
@@ -129,9 +128,6 @@ export async function POST(request: Request) {
             payment_terms: vendor.payment_terms || null,
             status: vendor.status || 'active',
             notes: vendor.notes || null,
-            created_by: vendor.created_by || user.id,
-            created_at: vendor.created_at || now,
-            updated_at: now,
         };
 
         // Insert vendor - RLS policies will enforce permissions

@@ -1,4 +1,3 @@
-import { RequirementsActionDialog } from '@/components/executive/requirements/requirements-action-dialog'
 import { RequirementsDeleteDialog } from '@/components/executive/requirements/requirements-delete-dialog'
 import { useRequirementsDialog } from '@/store/dialogs/useRequirementsDialog'
 
@@ -7,28 +6,7 @@ export function RequirementsDialogs() {
 
   return (
     <>
-      <RequirementsActionDialog
-        key='requirement-add'
-        open={openDialog === 'AddRequirement'}
-        onOpenChange={(open: boolean) => setOpenDialog(open ? 'AddRequirement' : null)}
-      />
-
       {currentRow && (
-        <>
-          <RequirementsActionDialog
-            key={`requirement-edit-${currentRow.id}`}
-            open={openDialog === 'EditRequirement'}
-            onOpenChange={(open: boolean) => {
-              setOpenDialog(open ? 'EditRequirement' : null)
-              if (!open) {
-                setTimeout(() => {
-                  setCurrentRow(null)
-                }, 500)
-              }
-            }}
-            currentRow={currentRow}
-          />
-
           <RequirementsDeleteDialog
             key={`requirement-delete-${currentRow.id}`}
             open={openDialog === 'DeleteRequirement'}
@@ -42,7 +20,6 @@ export function RequirementsDialogs() {
             }}
             currentRow={currentRow}
           />
-        </>
       )}
     </>
   )

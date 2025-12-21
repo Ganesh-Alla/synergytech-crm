@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import type{  RequirementItem } from "@/components/executive/requirements/schema";
 
 // Cache configuration
 const CACHE_DURATION = 30 * 1000; // 30 seconds
@@ -36,6 +37,20 @@ export async function GET() {
             return NextResponse.json([]);
         }
 
+        for (const requirement of requirements) {
+            const { data: requirementItems, error: requirementItemsError } = await supabase
+                .from("requirement_items")
+                .select("*")
+                .eq("requirement_id", requirement.id);
+                
+            if (requirementItemsError) {
+                console.error("Requirement items error:", requirementItemsError);
+                continue;
+            }
+
+            requirement.items = requirementItems;
+        }
+
         // Update cache
         cachedData = requirements;
         cacheTimestamp = now;
@@ -56,9 +71,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
-        const { requirement } = await request.json();
+        const { requirement, items } = await request.json();
         
-        if (!requirement) {
+        if (!requirement || !items) {
             return NextResponse.json(
                 { error: "Requirement data is required" },
                 { status: 400 }
@@ -76,6 +91,7 @@ export async function POST(request: Request) {
             );
         }
 
+  
 
         // Prepare client data
         const now = new Date().toISOString();
@@ -104,6 +120,29 @@ export async function POST(request: Request) {
         if (insertError) {
             return NextResponse.json(
                 { error: insertError.message },
+                { status: 400 }
+            );
+        }
+
+        const requirementItems = items.map((item: RequirementItem) => ({
+            id: randomUUID(),
+            requirement_id: insertedRequirement.id,
+            item_name: item.item_name,
+            item_description: item.item_description,
+            quantity: item.quantity,
+            unit_of_measure: item.unit_of_measure,
+            category: item.category,
+        }));
+
+        const { error: insertRequirementItemsError } = await supabase
+            .from("requirement_items")
+            .insert(requirementItems)
+            .select()
+            .single();
+
+        if (insertRequirementItemsError) {
+            return NextResponse.json(
+                { error: insertRequirementItemsError.message },
                 { status: 400 }
             );
         }

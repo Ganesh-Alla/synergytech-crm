@@ -25,6 +25,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { currencyOptions } from '@/lib/currency'
 import { useSearchParams } from 'next/navigation'
 import { Loader2, Plus, Trash2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 /* ------------------ Items schema ------------------ */
 const requirementItemFormSchema = z.object({
@@ -57,6 +58,7 @@ type RequirementForm = z.infer<typeof formSchema>
 const NewRequirementForm = ({ currentRow }: { currentRow?: Requirement }) => {
   const searchParams = useSearchParams()
   const currentClientId = searchParams.get('clientId')
+  const router = useRouter()
 
   const isEdit = !!currentRow
   const { addRequirement, updateRequirement } = useRequirementsStore()
@@ -109,7 +111,7 @@ const NewRequirementForm = ({ currentRow }: { currentRow?: Requirement }) => {
             title: '',
             description: '',
             status: 'new',
-            priority: null,
+            priority: 'low',
             required_by_date: null,
             estimated_budget_number: null,
             estimated_budget: '',
@@ -158,7 +160,7 @@ const NewRequirementForm = ({ currentRow }: { currentRow?: Requirement }) => {
         title: '',
         description: '',
         status: 'new',
-        priority: null,
+        priority: 'low',
         required_by_date: null,
         estimated_budget_number: null,
         estimated_budget: '',
@@ -237,6 +239,7 @@ const NewRequirementForm = ({ currentRow }: { currentRow?: Requirement }) => {
 
 
       form.reset()
+      router.push(`/app/requirements`)
     } catch (error) {
       console.error('Error submitting form:', error)
     } finally {

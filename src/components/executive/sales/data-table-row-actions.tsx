@@ -10,16 +10,16 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import type { Vendor } from './schema'
-import { useVendorsDialog } from '@/store/dialogs/useVendorsDialog'
+import type { SalesOrder } from './schema'
+import { useSalesDialog } from '@/store/dialogs/useSalesDialog'
 
 type DataTableRowActionsProps = {
-  row: Row<Vendor>
+  row: Row<SalesOrder>
   permission?: string
 }
 
 export function DataTableRowActions({ row, permission }: DataTableRowActionsProps) {
-  const { setOpenDialog, setCurrentRow } = useVendorsDialog()
+  const { setOpenDialog, setCurrentRow } = useSalesDialog()
   const canDelete = permission === 'full_access'
 
   return (
@@ -37,7 +37,7 @@ export function DataTableRowActions({ row, permission }: DataTableRowActionsProp
           <DropdownMenuItem
             onClick={() => {
               setCurrentRow(row.original)
-              setOpenDialog('EditVendor')
+              setOpenDialog('EditSalesOrder')
             }}
           >
             Edit
@@ -49,7 +49,7 @@ export function DataTableRowActions({ row, permission }: DataTableRowActionsProp
           <DropdownMenuItem
             onClick={() => {
               setCurrentRow(row.original)
-              setOpenDialog('DeleteVendor')
+              setOpenDialog('DeleteSalesOrder')
             }}
             className='text-red-500!'
             disabled={!canDelete}

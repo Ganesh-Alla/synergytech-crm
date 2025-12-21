@@ -2,13 +2,11 @@
 import { RefreshCw, UserPlus } from "lucide-react"
 import { Main } from "@/components/dashboard/main"
 import { Button } from "@/components/ui/button"
-import { useRequirementsDialog } from "@/store/dialogs/useRequirementsDialog"
 import { useRequirementsStore } from "@/store/requirementsStore"
 import Link from "next/link"
 import { RequirementsTable } from "@/components/executive/requirements/requirements-table"
 
 const RequirementsPage = () => {
-  const { setOpenDialog } = useRequirementsDialog()
   const { loadRequirements, requirementsLoading } = useRequirementsStore()
   return (
       <Main className='flex flex-1 flex-col gap-4 sm:gap-6'>
@@ -37,7 +35,6 @@ const RequirementsPage = () => {
           </div>
         </div>
         <RequirementsTable />
-        {/* <RequirementsDialogs /> */}
       </Main>
   )
 }

@@ -44,10 +44,10 @@ const formSchema = z
       z.null(),
       z.undefined(),
     ]).optional(),
-    address: z.string().url('Invalid URL.').nullable().optional().or(z.literal('')),
+    address: z.string().nullable().optional(),
     payment_terms: z
       .union([
-        z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format. Use YYYY-MM-DD.'),
+        z.string().nullable().optional(),
         z.literal('').transform(() => null),
         z.null(),
         z.undefined(),

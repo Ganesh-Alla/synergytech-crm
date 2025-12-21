@@ -347,7 +347,8 @@ function InfoRow({ icon: Icon, label, children }: InfoRowProps) {
     const placeholders: Record<keyof Lead, string> = {
       contact_name: 'Search by contact name...',
       contact_email: 'Search by email...',
-      contact_phone: 'Search by phone number...',
+      contact_phone: 'Search by phone...',
+      contact_number: 'Search by number...',
       client_code: 'Search by client code...',
       assigned_to_name: 'Search by assigned to...',
       id: 'Search...',

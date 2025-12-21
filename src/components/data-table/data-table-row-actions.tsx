@@ -13,7 +13,6 @@ import {
 import type{  User } from '@/components/admin/users/schema'
 import type { Lead } from '@/components/executive/leads/schema'
 import { useUserDialog } from '@/store/dialogs/useUserDialog'
-import { useLeadsDialog } from '@/store/dialogs/useLeadsDialog'
 
 type DataTableRowActionsProps = {
   row: Row<User | Lead>
@@ -23,9 +22,8 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
   // Check if it's a Lead by checking for lead-specific fields
   const isLead = 'contact_name' in row.original
   const userDialog = useUserDialog()
-  const leadsDialog = useLeadsDialog()
-  
-  const { setOpenDialog, setCurrentRow } = isLead ? leadsDialog : userDialog
+
+  const { setOpenDialog: setOpenUserDialog, setCurrentRow: setCurrentUserRow } = userDialog
   
   // For User type, check if super admin
   const isSuperAdmin = !isLead && 'permission' in row.original && row.original.permission === 'super_admin'
@@ -44,8 +42,8 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
         <DropdownMenuContent align='end' className='w-[160px]'>
           <DropdownMenuItem
             onClick={() => {
-              setCurrentRow(row.original as any)
-              setOpenDialog(isLead ? 'EditLead' : 'EditUser')
+              setCurrentUserRow(row.original as any)
+              setOpenUserDialog('EditUser')
             }}
             disabled={isSuperAdmin}
           >
@@ -57,8 +55,8 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => {
-              setCurrentRow(row.original as any)
-              setOpenDialog(isLead ? 'DeleteLead' : 'DeleteUser')
+              setCurrentUserRow(row.original as any)
+              setOpenUserDialog('DeleteUser')
             }}
             className='text-red-500!'
             disabled={isSuperAdmin}
