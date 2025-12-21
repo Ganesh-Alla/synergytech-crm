@@ -21,7 +21,7 @@ export default function AuthorizedLayout({ children }: { children: React.ReactNo
 
     // Redirect to login if not authenticated (only after initialization)
     if (!userData) {
-        redirect("/login")
+        redirect("/")
     }
 
     // Render children if authenticated

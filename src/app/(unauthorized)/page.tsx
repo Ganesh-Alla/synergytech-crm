@@ -22,6 +22,7 @@ import { useUserStore } from "@/store/userStore"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { Logo } from "@/components/logo"
 
 export default function LoginPage() {
   return (
@@ -32,7 +33,7 @@ export default function LoginPage() {
           <CardHeader className="border-b border-border/60">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <CardTitle className="text-xl">Sign in to SynergyTech CRM</CardTitle>
+                <CardTitle className="text-xl flex items-center gap-2">Sign in to <Logo/></CardTitle>
                 <CardDescription className="mt-1">
                   Choose your role to access the right workspace experience.
                 </CardDescription>
@@ -45,7 +46,7 @@ export default function LoginPage() {
             </div>
           </CardHeader>
         </Link>
-          <CardContent className="pt-6 space-y-6">
+          <CardContent className="pt-6 space-y-6 h-96">
             <Tabs defaultValue="executive" className="space-y-4">
               <TabsList className="w-full">
                 <TabsTrigger value="executive" className="flex-1 text-xs">

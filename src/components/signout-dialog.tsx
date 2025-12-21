@@ -12,7 +12,7 @@ export function SignOutDialog({ open, onOpenChange }: SignOutDialogProps) {
 
   const handleSignOut = async() => {
     await signOutAsync()
-    window.location.href = '/login'
+    window.location.href = '/'
   }
 
   return (
